@@ -1,19 +1,3 @@
-// ---------------------------------------------------------------
-// FileConverter.cpp  –  Lector multi-formato de archivos.
-//
-// .lp / .txt  → se leen directamente con ifstream.
-// .docx       → es un ZIP; se extrae word/document.xml con
-//               PowerShell + .NET (no necesita Office).
-// .pdf        → se abre con Word COM y se exporta como texto
-//               (necesita Microsoft Word instalado).
-//
-// NOTA: en este archivo NO se usa "using namespace std" porque
-// windows.h define 'byte' que colisiona con std::byte en C++17.
-// Se usa std:: explícitamente en su lugar.
-// ---------------------------------------------------------------
-
-// IMPORTANTE: windows.h PRIMERO, antes de cualquier header de C++,
-// para evitar la colisión std::byte vs byte de Windows.
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
@@ -24,12 +8,9 @@
 #include <algorithm>
 #include <cctype>
 
-// Variable estática para almacenar el último error.
 std::string FileConverter::error_ = "";
 
-// ---------------------------------------------------------------
-// getExtension() – Extrae la extensión en minúsculas.
-// ---------------------------------------------------------------
+/* Obtiene extension en minusculas para determinar el formato */
 std::string FileConverter::getExtension(const std::string& ruta) {
     size_t punto = ruta.rfind('.');
     if (punto == std::string::npos) return "";
@@ -39,9 +20,7 @@ std::string FileConverter::getExtension(const std::string& ruta) {
     return ext;
 }
 
-// ---------------------------------------------------------------
-// leerTextoPlano() – Lee un archivo de texto completo.
-// ---------------------------------------------------------------
+/* Lectura basica para .lp y .txt */
 std::string FileConverter::leerTextoPlano(const std::string& ruta) {
     std::ifstream f(ruta);
     if (!f) {
@@ -53,14 +32,7 @@ std::string FileConverter::leerTextoPlano(const std::string& ruta) {
     return ss.str();
 }
 
-// ---------------------------------------------------------------
-// ejecutarPS() – Ejecuta un script PowerShell de forma SILENCIOSA.
-//
-// 1. Guarda el script en un .ps1 temporal.
-// 2. Ejecuta con CreateProcessA (sin ventana visible).
-// 3. Lee la salida redirigida a un .txt temporal.
-// 4. Limpia los temporales y retorna el resultado.
-// ---------------------------------------------------------------
+/* Ejecuta script PowerShell en segundo plano sin mostrar ventana de consola */
 std::string FileConverter::ejecutarPS(const std::string& script) {
     char tempDir[MAX_PATH];
     GetTempPathA(MAX_PATH, tempDir);
@@ -68,14 +40,12 @@ std::string FileConverter::ejecutarPS(const std::string& script) {
     std::string scriptPath = std::string(tempDir) + "lexlp_convert.ps1";
     std::string outputPath = std::string(tempDir) + "lexlp_output.txt";
 
-    // Paso 1: guardar el script .ps1
     {
         std::ofstream f(scriptPath);
         if (!f) { error_ = "No se pudo crear script temporal."; return ""; }
         f << script;
     }
 
-    // Paso 2: construir y ejecutar el comando sin ventana
     std::string cmd = "cmd.exe /C powershell.exe -NoProfile -ExecutionPolicy Bypass -File \""
                     + scriptPath + "\" > \"" + outputPath + "\" 2>&1";
 
@@ -100,7 +70,6 @@ std::string FileConverter::ejecutarPS(const std::string& script) {
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
-    // Paso 3: leer resultado
     std::string resultado;
     {
         std::ifstream f(outputPath);
@@ -111,17 +80,13 @@ std::string FileConverter::ejecutarPS(const std::string& script) {
         }
     }
 
-    // Paso 4: limpiar temporales
     DeleteFileA(scriptPath.c_str());
     DeleteFileA(outputPath.c_str());
 
     return resultado;
 }
 
-// ---------------------------------------------------------------
-// extraerDocx() – Extrae texto de un .docx usando PowerShell .NET.
-// NO requiere Microsoft Office.
-// ---------------------------------------------------------------
+/* Descomprime el DOCX y extrae el contenido textual de word/document.xml */
 std::string FileConverter::extraerDocx(const std::string& ruta) {
     std::string rutaPS = ruta;
     size_t pos = 0;
@@ -160,10 +125,7 @@ std::string FileConverter::extraerDocx(const std::string& ruta) {
     return resultado;
 }
 
-// ---------------------------------------------------------------
-// extraerPdf() – Extrae texto de un .pdf usando Word COM.
-// REQUIERE Microsoft Word instalado.
-// ---------------------------------------------------------------
+/* Abre PDF usando COM de Word para convertirlo a texto */
 std::string FileConverter::extraerPdf(const std::string& ruta) {
     std::string rutaPS = ruta;
     size_t pos = 0;
@@ -203,9 +165,7 @@ std::string FileConverter::extraerPdf(const std::string& ruta) {
     return resultado;
 }
 
-// ---------------------------------------------------------------
-// leer() – Punto de entrada. Detecta extensión y llama al método adecuado.
-// ---------------------------------------------------------------
+/* Dispatcher de lectura segun el tipo de archivo */
 std::string FileConverter::leer(const std::string& ruta) {
     error_ = "";
     std::string ext = getExtension(ruta);

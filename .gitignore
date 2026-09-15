@@ -1,0 +1,61 @@
+# ==========================
+# CLion
+# ==========================
+
+.idea/
+*.iml
+
+# ==========================
+# CMake
+# ==========================
+
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# ==========================
+# Compilados
+# ==========================
+
+*.exe
+*.out
+*.o
+*.obj
+*.dll
+*.so
+*.a
+
+# ==========================
+# Debug
+# ==========================
+
+Debug/
+Release/
+*.pdb
+
+# ==========================
+# Archivos temporales
+# ==========================
+
+*.tmp
+*.log
+*.bak
+.DS_Store
+
+# ==========================
+# Salidas generadas
+# ==========================
+
+output/tokens.txt
+output/tabla_simbolos.txt
+output/errores.txt
+
+# ==========================
+# Archivos de prueba grandes
+# ==========================
+
+*.pdf
+*.docx

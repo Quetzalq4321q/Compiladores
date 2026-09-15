@@ -1,32 +1,8 @@
-// ---------------------------------------------------------------
-// main.cpp  –  Interfaz gráfica WinAPI para el Analizador Léxico LP.
-//
-// SEMANA 1: Reconocimiento de NUM_INT y NUM_DEC.
-//
-// ENTRADA: archivos .lp, .txt, .docx o .pdf
-//   - .lp y .txt se leen directamente.
-//   - .docx se extrae del ZIP/XML (no necesita Office).
-//   - .pdf se extrae vía Word COM (necesita Office).
-//
-// SALIDA VISUAL: ventana con 3 pestañas (Tokens, Tabla, Errores).
-// SALIDA ARCHIVO: se exporta automáticamente a output/*.txt
-//
-// Controles de la ventana:
-//   [Abrir Archivo]  →  diálogo para seleccionar archivo
-//   [Analizar]       →  ejecuta el lexer y muestra resultados
-//   TabControl con 3 pestañas:
-//     Pestaña 0 – Lista de Tokens
-//     Pestaña 1 – Tabla de Símbolos
-//     Pestaña 2 – Errores Léxicos
-// ---------------------------------------------------------------
-
-// Windows headers PRIMERO (con LEAN_AND_MEAN para reducir colisiones).
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <commctrl.h>
 #include <commdlg.h>
 
-// C++ standard headers DESPUÉS.
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -38,9 +14,7 @@
 
 using namespace std;
 
-// ---------------------------------------------------------------
-// IDs de controles
-// ---------------------------------------------------------------
+/* Identificadores de controles */
 #define IDC_TAB          100
 #define IDC_BTN_ABRIR    101
 #define IDC_BTN_ANALIZAR 102
@@ -49,9 +23,7 @@ using namespace std;
 #define IDC_EDIT_TABLA   111
 #define IDC_EDIT_ERRORES 112
 
-// ---------------------------------------------------------------
-// Handles globales de los controles
-// ---------------------------------------------------------------
+/* Handles de controles de la ventana */
 HWND hTab;
 HWND hEditTokens;
 HWND hEditTabla;
@@ -60,12 +32,10 @@ HWND hBtnAbrir;
 HWND hBtnAnalizar;
 HWND hLabelFile;
 
-string rutaArchivo;   // Ruta del archivo seleccionado.
-string dirProyecto;   // Directorio del ejecutable (para output/).
+string rutaArchivo;
+string dirProyecto;
 
-// ---------------------------------------------------------------
-// obtenerDirEjecutable() – Retorna la carpeta donde está el .exe
-// ---------------------------------------------------------------
+/* Obtiene la ruta del directorio del ejecutable */
 static string obtenerDirEjecutable() {
     char buf[MAX_PATH];
     GetModuleFileNameA(NULL, buf, MAX_PATH);
@@ -75,10 +45,7 @@ static string obtenerDirEjecutable() {
     return "";
 }
 
-// ---------------------------------------------------------------
-// setEditText() – Pone texto en un EDIT multilínea.
-//                 Convierte \n a \r\n (formato Windows).
-// ---------------------------------------------------------------
+/* Setea texto en un control EDIT convirtiendo saltos de linea a formato Windows */
 static void setEditText(HWND hEdit, const string& texto) {
     string conv;
     conv.reserve(texto.size() * 2);
@@ -89,9 +56,7 @@ static void setEditText(HWND hEdit, const string& texto) {
     SetWindowTextA(hEdit, conv.c_str());
 }
 
-// ---------------------------------------------------------------
-// mostrarPestana() – Muestra el EDIT de la pestaña seleccionada.
-// ---------------------------------------------------------------
+/* Alterna la visibilidad de los paneles segun la pestana activa */
 static void mostrarPestana(int idx) {
     ShowWindow(hEditTokens,  SW_HIDE);
     ShowWindow(hEditTabla,   SW_HIDE);
@@ -103,11 +68,8 @@ static void mostrarPestana(int idx) {
     }
 }
 
-// ---------------------------------------------------------------
-// guardarArchivo() – Guarda una cadena como archivo .txt
-// ---------------------------------------------------------------
+/* Guarda texto en disco creando el directorio si no existe */
 static void guardarArchivo(const string& ruta, const string& contenido) {
-    // Crear carpeta output/ si no existe.
     string dir = ruta.substr(0, ruta.find_last_of("\\/"));
     CreateDirectoryA(dir.c_str(), NULL);
 
@@ -115,17 +77,13 @@ static void guardarArchivo(const string& ruta, const string& contenido) {
     if (f) f << contenido;
 }
 
-// ---------------------------------------------------------------
-// ejecutarAnalisis() – Lee el archivo, ejecuta el lexer,
-//                      muestra resultados en GUI y exporta a .txt
-// ---------------------------------------------------------------
+/* Ejecuta el analisis lexico del archivo actual y actualiza la UI */
 static void ejecutarAnalisis(HWND hWnd) {
     if (rutaArchivo.empty()) {
         MessageBoxA(hWnd, "Primero abre un archivo.", "Aviso", MB_ICONWARNING);
         return;
     }
 
-    // ---- Leer el archivo (cualquier formato) ----
     SetWindowTextA(hLabelFile, "Leyendo archivo...");
     UpdateWindow(hWnd);
 
@@ -133,7 +91,7 @@ static void ejecutarAnalisis(HWND hWnd) {
     if (fuente.empty()) {
         string msg = "No se pudo leer el archivo.\n\n" + FileConverter::ultimoError();
         MessageBoxA(hWnd, msg.c_str(), "Error", MB_ICONERROR);
-        // Restaurar el nombre del archivo en la etiqueta.
+
         string nombre = rutaArchivo;
         size_t sep = nombre.find_last_of("\\/");
         if (sep != string::npos) nombre = nombre.substr(sep + 1);
@@ -141,7 +99,7 @@ static void ejecutarAnalisis(HWND hWnd) {
         return;
     }
 
-    // Mostrar nombre del archivo de nuevo.
+    /* Restaura nombre del archivo en la barra */
     {
         string nombre = rutaArchivo;
         size_t sep = nombre.find_last_of("\\/");
@@ -149,7 +107,7 @@ static void ejecutarAnalisis(HWND hWnd) {
         SetWindowTextA(hLabelFile, nombre.c_str());
     }
 
-    // ---- Ejecutar el análisis léxico ----
+    /* Analisis lexico */
     Lexer lexer(fuente);
     lexer.analizar();
 
@@ -157,20 +115,18 @@ static void ejecutarAnalisis(HWND hWnd) {
     const SymbolTable&   tabla   = lexer.getTabla();
     const vector<Token>& errores = lexer.getErrores();
 
-    // ---- Construir texto para cada pestaña ----
-
-    // Pestaña 0: Lista de Tokens
+    /* Pestana 0: Lista de tokens */
     string strTokens;
     {
         ostringstream ss;
         ss << "=== LISTA DE TOKENS ===\n";
         ss << "Total: " << tokens.size() << " token(s)\n";
-        ss << "---------------------------------------------\n";
+        ss << "---------------------------------------\n";
         if (tokens.empty()) {
             ss << "(Sin tokens reconocidos)\n";
         } else {
-            ss << "#     TOKEN        LEXEMA         LINEA  COL\n";
-            ss << "---------------------------------------------\n";
+            ss << "#     TOKEN        LEXEMA         LINEA\n";
+            ss << "---------------------------------------\n";
             int i = 1;
             for (const auto& t : tokens) {
                 string num = to_string(i++) + ".";
@@ -186,13 +142,13 @@ static void ejecutarAnalisis(HWND hWnd) {
                 lex.resize(15, ' ');
                 ss << lex;
 
-                ss << t.linea << "      " << t.columna << "\n";
+                ss << t.linea << "\n";
             }
         }
         strTokens = ss.str();
     }
 
-    // Pestaña 1: Tabla de Símbolos
+    /* Pestana 1: Tabla de simbolos */
     string strTabla;
     {
         ostringstream ss;
@@ -215,39 +171,37 @@ static void ejecutarAnalisis(HWND hWnd) {
         strTabla = ss.str();
     }
 
-    // Pestaña 2: Errores Léxicos
+    /* Pestana 2: Errores lexicos */
     string strErrores;
     {
         ostringstream ss;
         ss << "=== ERRORES LEXICOS ===\n";
         ss << "Total: " << errores.size() << " error(es)\n";
-        ss << "---------------------------------------------\n";
+        ss << "---------------------------------------\n";
         if (errores.empty()) {
             ss << "(Sin errores lexicos)\n";
         } else {
-            ss << "LINEA  COL    LEXEMA    RESULTADO\n";
-            ss << "---------------------------------------------\n";
+            ss << "LINEA  LEXEMA         RESULTADO\n";
+            ss << "---------------------------------------\n";
             for (const auto& e : errores) {
                 string lin = to_string(e.linea);
                 lin.resize(7, ' ');
-                string col = to_string(e.columna);
-                col.resize(7, ' ');
                 string lex = "'" + e.lexema + "'";
-                lex.resize(10, ' ');
-                ss << lin << col << lex << "ERROR_LEXICO\n";
+                lex.resize(15, ' ');
+                ss << lin << lex << "ERROR_LEXICO\n";
             }
         }
         strErrores = ss.str();
     }
 
-    // ---- Mostrar en la GUI ----
+    /* Actualiza la interfaz */
     setEditText(hEditTokens,  strTokens);
     setEditText(hEditTabla,   strTabla);
     setEditText(hEditErrores, strErrores);
     TabCtrl_SetCurSel(hTab, 0);
     mostrarPestana(0);
 
-    // ---- Exportar a archivos .txt en output/ ----
+    /* Exporta resultados a la carpeta output/ */
     string outDir = dirProyecto + "..\\output\\";
     guardarArchivo(outDir + "tokens.txt",          strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt",   strTabla);
@@ -262,9 +216,7 @@ static void ejecutarAnalisis(HWND hWnd) {
         "Listo", MB_ICONINFORMATION);
 }
 
-// ---------------------------------------------------------------
-// redimensionarPaneles() – Ajusta los controles al tamaño de la ventana.
-// ---------------------------------------------------------------
+/* Ajusta los controles al redimensionar la ventana */
 static void redimensionarPaneles(HWND hWnd) {
     RECT rc;
     GetClientRect(hWnd, &rc);
@@ -292,9 +244,7 @@ static void redimensionarPaneles(HWND hWnd) {
     SetWindowPos(hEditErrores, NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
 }
 
-// ---------------------------------------------------------------
-// WndProc() – Procedimiento de ventana principal.
-// ---------------------------------------------------------------
+/* Manejador de eventos de la ventana */
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
 
@@ -372,7 +322,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
 
-        // ---- Botón "Abrir Archivo" ----
         case IDC_BTN_ABRIR: {
             char szFile[MAX_PATH] = {};
             OPENFILENAMEA ofn = {};
@@ -380,7 +329,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             ofn.hwndOwner    = hWnd;
             ofn.lpstrFile    = szFile;
             ofn.nMaxFile     = sizeof(szFile);
-            // Filtros: los 4 formatos aceptados + todos los archivos
             ofn.lpstrFilter  =
                 "Archivos LP (*.lp)\0*.lp\0"
                 "Archivos de Texto (*.txt)\0*.txt\0"
@@ -400,7 +348,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             break;
         }
 
-        // ---- Botón "Analizar" ----
         case IDC_BTN_ANALIZAR:
             ejecutarAnalisis(hWnd);
             break;
@@ -433,9 +380,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     return 0;
 }
 
-// ---------------------------------------------------------------
-// WinMain() – Punto de entrada.
-// ---------------------------------------------------------------
+/* Punto de entrada WinMain para aplicacion de ventana */
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     dirProyecto = obtenerDirEjecutable();
 
@@ -455,7 +400,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     RegisterClassExA(&wc);
 
     HWND hWnd = CreateWindowExA(0, "LexLP_Clase",
-        "Analizador Lexico LP  –  Semana 1: NUM_INT y NUM_DEC",
+        "Analizador Lexico LP  -  Semana 1: NUM_INT y NUM_DEC",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 860, 600,
         NULL, NULL, hInstance, NULL);

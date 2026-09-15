@@ -1,22 +1,16 @@
-// ---------------------------------------------------------------
-// Token.cpp  –  Implementación de la estructura Token.
-// ---------------------------------------------------------------
 #include "Token.h"
 
 using namespace std;
 
-// Constructor por defecto.
+/* Token vacio por defecto */
 Token::Token()
-    : tipo(LexTokenType::LEX_EOF), lexema(""), linea(0), columna(0) {}
+    : tipo(LexTokenType::LEX_EOF), lexema(""), linea(0) {}
 
-// Constructor parametrizado.
-Token::Token(LexTokenType tipo, const string& lexema, int linea, int columna)
-    : tipo(tipo), lexema(lexema), linea(linea), columna(columna) {}
+/* Inicializa token con tipo, texto y numero de linea */
+Token::Token(LexTokenType tipo, const string& lexema, int linea)
+    : tipo(tipo), lexema(lexema), linea(linea) {}
 
-// ---------------------------------------------------------------
-// tokenTypeToString() – Nombre del tipo de token.
-// Se usa tanto en la lista de tokens como en los errores.
-// ---------------------------------------------------------------
+/* Mapea cada enum a su etiqueta textual */
 string tokenTypeToString(LexTokenType tipo) {
     switch (tipo) {
         case LexTokenType::NUM_INT:   return "NUM_INT";
@@ -27,12 +21,7 @@ string tokenTypeToString(LexTokenType tipo) {
     }
 }
 
-// ---------------------------------------------------------------
-// Token::toString() – Formato de salida del token.
-//
-// Tokens normales  →  <NUM_INT>
-// Errores léxicos  →  ERROR_LEXICO
-// ---------------------------------------------------------------
+/* Representacion de salida: <NUM_INT> o ERROR_LEXICO */
 string Token::toString() const {
     if (tipo == LexTokenType::LEX_ERROR) return "ERROR_LEXICO";
     return "<" + tokenTypeToString(tipo) + ">";

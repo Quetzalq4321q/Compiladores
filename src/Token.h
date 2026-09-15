@@ -1,53 +1,32 @@
-// ---------------------------------------------------------------
-// Token.h  –  Definición del tipo de token y la estructura Token.
-//
-// SEMANA 1: solo se reconocen NUM_INT y NUM_DEC.
-//   NUM_INT  →  D+          (uno o más dígitos)
-//   NUM_DEC  →  D+ '.' D+  (dígitos, punto, dígitos)
-//
-// Campos de Token:
-//   tipo    – categoría léxica (enum LexTokenType)
-//   lexema  – texto original encontrado en el fuente
-//   linea   – línea donde aparece (base 1)
-//   columna – columna donde empieza (base 1)
-//
-// NOTA: el enum se llama LexTokenType (no TokenType) para evitar
-// colisiones con los macros TOKEN_* de la API de Windows.
-// ---------------------------------------------------------------
 #pragma once
 
 #include <string>
 
 using namespace std;
 
-// ---------------------------------------------------------------
-// LexTokenType – Enumeración de categorías léxicas.
-// ---------------------------------------------------------------
+/* Categorias lexicas para la entrega actual (Semana 1: enteros y decimales) */
 enum class LexTokenType {
-    NUM_INT,      // Número entero:   42, 0, 1000
-    NUM_DEC,      // Número decimal:  3.14, 0.5, 10.0
-    LEX_ERROR,    // Carácter o secuencia no reconocida.
-    LEX_EOF       // Marca interna de fin de texto.
+    NUM_INT,      /* Enteros: 12, 0, 999 */
+    NUM_DEC,      /* Decimales: 3.14, 0.5 */
+    LEX_ERROR,    /* Caracter o simbolo no reconocido */
+    LEX_EOF       /* Fin de archivo */
 };
 
-// ---------------------------------------------------------------
-// Token – Unidad mínima producida por el analizador léxico.
-// ---------------------------------------------------------------
+/* Representa un token reconocido en el codigo fuente */
 struct Token {
     LexTokenType tipo;
     string       lexema;
     int          linea;
-    int          columna;
 
-    // Constructor por defecto (token vacío).
+    /* Constructor por defecto */
     Token();
 
-    // Constructor parametrizado.
-    Token(LexTokenType tipo, const string& lexema, int linea, int columna);
+    /* Constructor con datos del token */
+    Token(LexTokenType tipo, const string& lexema, int linea);
 
-    // Devuelve la representación imprimible, ej: "<NUM_INT>"
+    /* Retorna formato imprimible del token (ej. <NUM_INT>) */
     string toString() const;
 };
 
-// Convierte un LexTokenType a su nombre de texto, ej: "NUM_INT"
+/* Convierte el enum a texto legible */
 string tokenTypeToString(LexTokenType tipo);
