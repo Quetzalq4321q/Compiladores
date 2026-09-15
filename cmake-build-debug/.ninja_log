@@ -1,0 +1,8 @@
+# ninja log v7
+17	758	8111812148023359	CMakeFiles/Compiladores.dir/src/Token.cpp.obj	d758e1765b3d07cf
+24	896	8111812148096484	CMakeFiles/Compiladores.dir/src/Lexer.cpp.obj	e2ce5baa2790d3cd
+32	967	8111812148166943	CMakeFiles/Compiladores.dir/src/SymbolTable.cpp.obj	dea5f2ed562ed13b
+2	2898	8111812147875668	CMakeFiles/Compiladores.dir/src/main.cpp.obj	69dad0838d36d646
+12	1574	8111812966177996	CMakeFiles/Compiladores.dir/src/FileConverter.cpp.obj	309b532b3a30a97e
+5	1655	8111812966102086	CMakeFiles/Compiladores.dir/src/main.cpp.obj	69dad0838d36d646
+4	149	8111813079872484	Compiladores.exe	64909b935312aef6

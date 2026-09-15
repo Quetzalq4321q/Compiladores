@@ -1,0 +1,14 @@
+=== ERRORES LEXICOS ===
+Total: 9 error(es)
+---------------------------------------------
+LINEA  COL    LEXEMA    RESULTADO
+---------------------------------------------
+5      1      'h'       ERROR_LEXICO
+5      2      'o'       ERROR_LEXICO
+5      3      'l'       ERROR_LEXICO
+5      4      'a'       ERROR_LEXICO
+6      1      'm'       ERROR_LEXICO
+6      2      'u'       ERROR_LEXICO
+6      3      'n'       ERROR_LEXICO
+6      4      'd'       ERROR_LEXICO
+6      5      'o'       ERROR_LEXICO

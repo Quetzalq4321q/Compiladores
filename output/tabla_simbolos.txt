@@ -1,0 +1,6 @@
+=== TABLA DE SIMBOLOS ===
+---------------------------------
+(Vacia en Semana 1)
+
+Los identificadores (ID) se
+agregaran en la Semana 2.
