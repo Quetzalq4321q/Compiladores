@@ -1,6 +1,6 @@
-=== TABLA DE SIMBOLOS ===
----------------------------------
-(Vacia en Semana 1)
-
-Los identificadores (ID) se
-agregaran en la Semana 2.
+=== TABLA DE SIMBOLOS ===
+Total: 1 identificador(es)
+---------------------------------------------------
+POS    IDENTIFICADOR         TIPO          LINEA INI   APARICIONES
+---------------------------------------------------------------------------
+#0     nota                  desconocido   Linea 1     L1
