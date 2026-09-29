@@ -291,8 +291,15 @@ git push --force $Remote "refs/tags/$tag"
 
 # 9. Publicar en GitHub Releases con GitHub CLI
 Write-Step "Publicando GitHub Release oficial"
-gh release view $tag *> $null
-$existeRelease = ($LASTEXITCODE -eq 0)
+$existeRelease = $false
+try {
+    $null = cmd /c "gh release view $tag >nul 2>&1"
+    if ($LASTEXITCODE -eq 0) {
+        $existeRelease = $true
+    }
+} catch {
+    $existeRelease = $false
+}
 
 if ($existeRelease) {
     Write-Host "Actualizando release existente $tag..." -ForegroundColor DarkYellow
