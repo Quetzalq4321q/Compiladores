@@ -1,6 +1,12 @@
 # Compiladores - Analizador Léxico para Lenguaje LP
 
-Analizador léxico desarrollado en C++20 para el lenguaje simplificado **LP (Lenguaje de Programación)**, con interfaz gráfica nativa en Windows (WinAPI), tabla de símbolos integrada, soporte multiformato (.lp, .txt, .docx, .pdf), módulo unificado de contención de errores y suite de pruebas unitarias automatizada.
+<p align="center">
+  <img src="res/compiler.png" width="128" height="128" alt="Icono Compilador LP" />
+  <br>
+  <strong>Compilador y Analizador Léxico para el Lenguaje LP (C++20)</strong>
+</p>
+
+Analizador léxico desarrollado en C++20 para el lenguaje simplificado **LP (Lenguaje de Programación)**, con interfaz gráfica nativa en Windows (WinAPI), versión CLI multiplataforma (Linux/Docker/Windows), tabla de símbolos integrada, soporte multiformato (.lp, .txt, .docx, .pdf), módulo unificado de contención de errores y suite de pruebas unitarias automatizada.
 
 ---
 
@@ -59,19 +65,23 @@ Para consultar los detalles técnicos, guías y registros de evolución del proy
 void main() {
 int edad = 20;
 float promedio = 15.5;
-if (edad >= 18 && edad <= 60)
-{ println("Edad valida"); }
-return; }
+if (edad >= 18 && edad <= 60) {
+println("Edad valida");
+}
+return;
+}
 ```
 
 ### Secuencia de Tokens Resultante:
-```
+```text
 <VOID> <MAIN> <(> <)> <{>
 <INT> <ID,0> <=> <NUM_INT> <;>
 <FLOAT> <ID,1> <=> <NUM_DEC> <;>
-<IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)>
-<{> <PRINTLN> <(> <TEXTO> <)> <;> <}>
-<RETURN> <;> <}>
+<IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)> <{>
+<PRINTLN> <(> <TEXTO> <)> <;>
+<}>
+<RETURN> <;>
+<}>
 ```
 
 ### Tabla de Símbolos:
@@ -84,19 +94,57 @@ return; }
 
 ## 3. Compilación y Ejecución
 
-### Compilar Aplicación Visual (GUI):
+### 3.1 Aplicación Visual (GUI Windows)
 ```powershell
 cmake --build cmake-build-debug --target Compiladores
 .\cmake-build-debug\Compiladores.exe
 ```
 
-### Ejecutar Pruebas Automatizadas:
+### 3.2 Aplicación por Consola (CLI Multiplataforma)
+```powershell
+cmake --build cmake-build-debug --target compilador_lp
+.\cmake-build-debug\compilador_lp.exe input/ejemplo.lp
+```
+
+### 3.3 Ejecutar Pruebas Automatizadas:
 ```powershell
 cmake --build cmake-build-debug --target test_lexer
 .\cmake-build-debug\test_lexer.exe
 ```
 
-### Publicar Release en GitHub:
+---
+
+## 4. 🐳 Entorno Docker (Dockeado)
+
+El proyecto incluye soporte completo para ejecución contenedorizada en Linux mediante Docker y Docker Compose:
+
+### Construir y Ejecutar con Docker:
+```bash
+# Construir la imagen optimizada
+docker build -t compiladores-lp .
+
+# Ejecutar el analizador sobre el archivo por defecto
+docker run --rm -v $(pwd)/output:/app/output compiladores-lp
+
+# Ejecutar sobre un archivo específico
+docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output compiladores-lp input/mi_codigo.lp
+
+# Ejecutar la suite de pruebas unitarias
+docker run --rm --entrypoint /app/test_lexer compiladores-lp
+```
+
+### Uso con Docker Compose:
+```bash
+# Levantar y procesar input/ejemplo.lp
+docker compose up compilador
+
+# Ejecutar pruebas unitarias
+docker compose run --rm test
+```
+
+---
+
+## 5. Publicar Release en GitHub:
 ```powershell
 .\release.ps1 1.0.0
 ```

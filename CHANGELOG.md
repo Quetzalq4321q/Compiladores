@@ -40,6 +40,15 @@ Esta versión representa la entrega formal y completa del proyecto según las di
   * Detección y rechazo de archivos multimedia (`.mp3`, `.mp4`, etc.).
   * Validación de valores muertos: detección de archivos de 0 bytes o código fuente compuesto exclusivamente por espacios en blanco o saltos de línea.
   * Verificación de integridad de bytes nulos (`\0`) en archivos de texto.
+* **Identidad Visual e Icono Oficial del Compilador (`res/`)**:
+  * Diseño de icono distintivo representando el compilador: brackets de código `< / >` sobre engranaje de transformación y badge `LP`.
+  * Generación en formatos `res/compiler.svg` (vectorial), `res/compiler.png` (256x256) y `res/compiler.ico` (multi-resolución).
+  * Incrustación de `res/compiler.ico` en el binario ejecutable Windows `Compiladores.exe` mediante `res/resource.rc` y asociación de icono a la ventana y barra de tareas.
+* **Aplicación CLI y Soporte Contenedorizado Docker**:
+  * Ejecutable de línea de comandos `compilador_lp` compatible con Linux y Windows.
+  * `Dockerfile` multi-etapa optimizado sobre GCC 13 y Debian bookworm-slim con ejecución de pruebas unitarias automáticas durante la construcción.
+  * Configuración `docker-compose.yml` para ejecución inmediata y mapeo de volúmenes de entrada/salida (`input/` y `output/`).
+  * Compatibilidad multiplataforma en `FileConverter` para compilar en Linux sin dependencias Win32.
 * **Suite de Pruebas Unitarias Automatizadas (`test_lexer.exe`)**:
   * Test 1: Verificación del caso de prueba oficial de la Sección 12 con secuencia exacta.
   * Test 2: Operadores aritméticos y descarte correcto de comentarios.

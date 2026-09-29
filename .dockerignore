@@ -1,0 +1,7 @@
+.git/
+.idea/
+cmake-build-*/
+build/
+dist/
+*.zip
+output/*.txt

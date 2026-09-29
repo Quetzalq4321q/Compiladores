@@ -363,13 +363,22 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     icc.dwICC  = ICC_TAB_CLASSES;
     InitCommonControlsEx(&icc);
 
+    HICON hAppIcon = LoadIconA(hInstance, MAKEINTRESOURCEA(101));
+    if (!hAppIcon) {
+        hAppIcon = (HICON)LoadImageA(NULL, "res\\compiler.ico", IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+    }
+    if (!hAppIcon) {
+        hAppIcon = LoadIcon(NULL, IDI_APPLICATION);
+    }
+
     WNDCLASSEXA wc   = {};
     wc.cbSize        = sizeof(wc);
     wc.lpfnWndProc   = WndProc;
     wc.hInstance     = hInstance;
     wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
     wc.lpszClassName = "LexLP_Clase";
-    wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+    wc.hIcon         = hAppIcon;
+    wc.hIconSm       = hAppIcon;
     wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
     RegisterClassExA(&wc);
 
@@ -378,6 +387,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1000, 650,
         NULL, NULL, hInstance, NULL);
+
+    SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hAppIcon);
+    SendMessage(hWnd, WM_SETICON, ICON_SMALL, (LPARAM)hAppIcon);
 
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);

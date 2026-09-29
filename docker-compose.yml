@@ -1,0 +1,21 @@
+services:
+  compilador:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: compiladores-lp:latest
+    container_name: compilador_lp_container
+    volumes:
+      - ./input:/app/input:ro
+      - ./output:/app/output
+    environment:
+      - TERM=xterm-256color
+    command: ["input/ejemplo.lp"]
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: compiladores-lp:test
+    container_name: compilador_lp_tests
+    entrypoint: ["/app/test_lexer"]

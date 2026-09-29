@@ -1,5 +1,10 @@
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#include <cstdlib>
+#include <unistd.h>
+#endif
 
 #include "FileConverter.h"
 
@@ -34,6 +39,7 @@ std::string FileConverter::leerTextoPlano(const std::string& ruta) {
 
 /* Ejecuta script PowerShell en segundo plano sin mostrar ventana de consola */
 std::string FileConverter::ejecutarPS(const std::string& script) {
+#ifdef _WIN32
     char tempDir[MAX_PATH];
     GetTempPathA(MAX_PATH, tempDir);
 
@@ -84,10 +90,15 @@ std::string FileConverter::ejecutarPS(const std::string& script) {
     DeleteFileA(outputPath.c_str());
 
     return resultado;
+#else
+    error_ = "Ejecucion de script PowerShell no soportada en este sistema operativo.";
+    return "";
+#endif
 }
 
 /* Descomprime el DOCX y extrae el contenido textual de word/document.xml */
 std::string FileConverter::extraerDocx(const std::string& ruta) {
+#ifdef _WIN32
     std::string rutaPS = ruta;
     size_t pos = 0;
     while ((pos = rutaPS.find('\'', pos)) != std::string::npos) {
@@ -123,10 +134,15 @@ std::string FileConverter::extraerDocx(const std::string& ruta) {
         error_ = "No se pudo extraer texto del DOCX.";
     }
     return resultado;
+#else
+    error_ = "Extraccion de archivos .docx requiere entorno Windows o utilizacion de texto plano (.lp, .txt).";
+    return "";
+#endif
 }
 
 /* Abre PDF usando COM de Word para convertirlo a texto */
 std::string FileConverter::extraerPdf(const std::string& ruta) {
+#ifdef _WIN32
     std::string rutaPS = ruta;
     size_t pos = 0;
     while ((pos = rutaPS.find('\'', pos)) != std::string::npos) {
@@ -163,6 +179,10 @@ std::string FileConverter::extraerPdf(const std::string& ruta) {
         error_ = "No se pudo extraer texto del PDF.\nSe requiere Microsoft Word instalado.";
     }
     return resultado;
+#else
+    error_ = "Extraccion de archivos .pdf requiere entorno Windows con Microsoft Word.";
+    return "";
+#endif
 }
 
 #include "ErrorHandler.h"

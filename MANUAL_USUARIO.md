@@ -145,7 +145,55 @@ Salida esperada:
 
 ---
 
-## 6. Publicación y Empaquetado de Releases
+## 6. Ejecución en Contenedores Docker (Multiplataforma)
+
+El analizador cuenta con una imagen Docker multi-etapa basada en Linux (GCC 13 y Debian slim) que compila y ejecuta tanto el analizador CLI como las pruebas unitarias:
+
+### 6.1 Construir la Imagen
+```bash
+docker build -t compiladores-lp .
+```
+
+### 6.2 Ejecutar el Analizador
+* **Procesar el ejemplo oficial y exportar resultados**:
+  ```bash
+  docker run --rm -v $(pwd)/output:/app/output compiladores-lp
+  ```
+* **Procesar un archivo local específico**:
+  ```bash
+  docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output compiladores-lp input/mi_programa.lp
+  ```
+
+### 6.3 Ejecutar Pruebas con Docker Compose
+```bash
+# Ejecutar compilador
+docker compose up compilador
+
+# Ejecutar suite de pruebas
+docker compose run --rm test
+```
+
+---
+
+## 7. Icono e Identidad Visual del Compilador
+
+El proyecto cuenta con un icono oficial ubicado en `res/`:
+* **Vectorial SVG**: `res/compiler.svg` (apto para web y presentaciones en alta resolución).
+* **Imagen PNG**: `res/compiler.png` (256x256 píxeles).
+* **Icono Windows ICO**: `res/compiler.ico` (incrustado directamente en el ejecutable `Compiladores.exe` mediante `res/resource.rc`).
+
+### Simbología del Icono:
+* **Brackets de Código `< / >`**: Representan el análisis del código fuente y la transformación léxica hacia tokens.
+* **Engranaje Central**: Representa el motor de compilación y la tabla de símbolos interna.
+* **Colores**:
+  * *Verde Esmeralda (`<`)*: Entrada de código fuente válida.
+  * *Cian Eléctrico (`/`)*: AFD de análisis y transición de estados.
+  * *Ámbar (`>`)*: Tokens y reporte clasificado de salida.
+  * *Fondo Slate Oscuro*: Estabilidad y terminal moderna.
+
+---
+
+## 8. Publicación y Empaquetado de Releases
 
 Si deseas generar un release completo empaquetado para distribución en GitHub:
 ```powershell
@@ -153,7 +201,8 @@ Si deseas generar un release completo empaquetado para distribución en GitHub:
 ```
 Este script realiza automáticamente:
 1. Verificación de herramientas (`git`, `gh`, `cmake`).
-2. Compilación del binario optimizado `Compiladores.exe`.
-3. Empaquetado de artefactos en `dist/Compiladores-v1.0.0-windows-x64.zip`.
-4. Creación del tag Git `v1.0.0` y subida a GitHub.
-5. Publicación del release oficial con notas de versión mediante GitHub CLI.
+2. Compilación del binario optimizado `Compiladores.exe` con su icono oficial.
+3. Construcción de la imagen Docker si el servicio Docker está disponible.
+4. Empaquetado de artefactos en `dist/Compiladores-v1.0.0-windows-x64.zip`.
+5. Creación del tag Git `v1.0.0` y subida a GitHub.
+6. Publicación del release oficial con notas de versión mediante GitHub CLI.
