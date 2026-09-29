@@ -138,6 +138,12 @@ Salida esperada:
 [PASS] Valor muerto detectado y rechazado.
 [PASS] Categorias de la tabla oficial asignadas correctamente a cada token.
 
+=== Test 7: Anomalias de Escritura y Falta de Sentido Lexico (;;;;...) ===
+[PASS] Se leyeron exitosamente los 33 tokens <;> individuales.
+[PASS] Alerta generada para secuencia redundante de ';' (carece de sentido lexico/logico).
+[PASS] Alerta generada para operadores aritmeticos redundantes ('+++').
+[PASS] Alerta generada para operadores de asignacion anomala ('===').
+
 ========================================
  TODAS LAS PRUEBAS PASARON EXITOSAMENTE 
 ========================================

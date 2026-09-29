@@ -13,6 +13,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Forzar codificacion UTF-8 estricta para evitar deformacion de texto en GitHub
+[System.Console]::InputEncoding = [System.Text.Encoding]::UTF8
+[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+
 function Write-Step {
     param([string]$Text)
     Write-Host ""
@@ -308,6 +313,24 @@ if ($existeRelease) {
 } else {
     Write-Host "Creando nueva release $tag..." -ForegroundColor Green
     gh release create $tag $zipPath --title $Title --notes-file $notesPath --latest
+}
+
+# Sincronizar cuerpo de la release garantizando UTF-8 puro (evita deformacion de acentos y emojis)
+try {
+    $syncPy = @"
+import subprocess, json
+try:
+    with open(r'$notesPath', 'r', encoding='utf-8') as f:
+        notes = f.read()
+    relId = subprocess.check_output(['gh', 'api', 'repos/Quetzalq4321q/Compiladores/releases/tags/$tag', '--jq', '.id'], text=True).strip()
+    payload = json.dumps({'body': notes})
+    subprocess.run(['gh', 'api', '-X', 'PATCH', f'repos/Quetzalq4321q/Compiladores/releases/{relId}', '--input', '-'], input=payload.encode('utf-8'), check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+except Exception:
+    pass
+"@
+    python -c $syncPy
+} catch {
+    # Silencioso si falla
 }
 
 Write-Step "RELEASE PUBLICADA EXITOSAMENTE EN GITHUB"

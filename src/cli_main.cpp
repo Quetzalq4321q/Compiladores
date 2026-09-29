@@ -156,7 +156,15 @@ int main(int argc, char* argv[]) {
     if (errores.empty()) {
         cout << "\033[1;32m" << strErrores << "\033[0m" << endl;
     } else {
-        cout << "\033[1;31m" << strErrores << "\033[0m" << endl;
+        int cantAlertas = 0;
+        for (const auto& e : errores) {
+            if (e.mensaje.find("carece de sentido") != string::npos) cantAlertas++;
+        }
+        if (cantAlertas > 0 && cantAlertas == static_cast<int>(errores.size())) {
+            cout << "\033[1;33m" << strErrores << "\033[0m" << endl;
+        } else {
+            cout << "\033[1;31m" << strErrores << "\033[0m" << endl;
+        }
     }
 
     /* Guardar archivos de salida */

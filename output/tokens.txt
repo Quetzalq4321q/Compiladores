@@ -7,10 +7,9 @@
 <}>
 <RETURN> <;>
 <}>
-<;> <;> <;> <;> <;> <;> <;> <;> <;> <;> <;> <;> <;> <;>
 
 === TABLA DETALLADA DE TOKENS (ESPECIFICACION LP) ===
-Total: 49 token(s) reconocidos
+Total: 35 token(s) reconocidos
 ------------------------------------------------------------------------------------------------------
 #      TOKEN            LEXEMA               CATEGORIA DEL TOKEN                    LINEA
 ------------------------------------------------------------------------------------------------------
@@ -49,17 +48,3 @@ Total: 49 token(s) reconocidos
 33.    <RETURN>         return               Palabra reservada                      7
 34.    <;>              ;                    Simbolo especial                       7
 35.    <}>              }                    Simbolo especial                       8
-36.    <;>              ;                    Simbolo especial                       9
-37.    <;>              ;                    Simbolo especial                       9
-38.    <;>              ;                    Simbolo especial                       9
-39.    <;>              ;                    Simbolo especial                       9
-40.    <;>              ;                    Simbolo especial                       9
-41.    <;>              ;                    Simbolo especial                       9
-42.    <;>              ;                    Simbolo especial                       9
-43.    <;>              ;                    Simbolo especial                       9
-44.    <;>              ;                    Simbolo especial                       9
-45.    <;>              ;                    Simbolo especial                       9
-46.    <;>              ;                    Simbolo especial                       9
-47.    <;>              ;                    Simbolo especial                       9
-48.    <;>              ;                    Simbolo especial                       9
-49.    <;>              ;                    Simbolo especial                       9

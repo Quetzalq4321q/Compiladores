@@ -173,6 +173,54 @@ void testContencionErroresYCategorias() {
     cout << endl;
 }
 
+void testAnomaliasSentidoLexico() {
+    cout << "=== Test 7: Anomalias de Escritura y Falta de Sentido Lexico (;;;;...) ===" << endl;
+    string codigo =
+        "int edad = 20;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;\n"
+        "float promedio = 15.5;\n"
+        "edad = edad +++ 1;\n"
+        "int x = a === b;";
+
+    Lexer lexer(codigo);
+    lexer.analizar();
+
+    const auto& tokens = lexer.getTokens();
+    const auto& errores = lexer.getErrores();
+
+    /* 1. Verificar que los puntos y comas se leyeron como tokens ("los lee si") */
+    int cantSemicolons = 0;
+    for (const auto& t : tokens) {
+        if (t.tipo == LexTokenType::SEMICOLON) cantSemicolons++;
+    }
+    assert(cantSemicolons >= 30);
+    cout << "[PASS] Se leyeron exitosamente los " << cantSemicolons << " tokens <;> individuales." << endl;
+
+    /* 2. Verificar que se genero la alerta de falta de sentido lexico ("pero lo alerta") */
+    bool alertaPuntosComas = false;
+    bool alertaPlus = false;
+    bool alertaIgual = false;
+
+    for (const auto& e : errores) {
+        if (e.mensaje.find("puntos y comas") != string::npos && e.mensaje.find("carece de sentido") != string::npos) {
+            alertaPuntosComas = true;
+        }
+        if (e.mensaje.find("+++") != string::npos || (e.mensaje.find("aritmeticos repetidos") != string::npos)) {
+            alertaPlus = true;
+        }
+        if (e.mensaje.find("===") != string::npos) {
+            alertaIgual = true;
+        }
+    }
+
+    assert(alertaPuntosComas);
+    cout << "[PASS] Alerta generada para secuencia redundante de ';' (carece de sentido lexico/logico)." << endl;
+    assert(alertaPlus);
+    cout << "[PASS] Alerta generada para operadores aritmeticos redundantes ('+++')." << endl;
+    assert(alertaIgual);
+    cout << "[PASS] Alerta generada para operadores de asignacion anomala ('===')." << endl;
+    cout << endl;
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << " EJECUTANDO PRUEBAS UNITARIAS LEXER LP  " << endl;
@@ -184,6 +232,7 @@ int main() {
     testIdentificadoresRepetidos();
     testErroresLexicos();
     testContencionErroresYCategorias();
+    testAnomaliasSentidoLexico();
 
     cout << "========================================" << endl;
     cout << " TODAS LAS PRUEBAS PASARON EXITOSAMENTE " << endl;

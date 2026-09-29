@@ -205,11 +205,11 @@ DiagnosticoEntrada ErrorHandler::validarCodigoFuente(const string& codigo) {
     return diag;
 }
 
-/* Genera el reporte formateado de errores lexicos */
+/* Genera el reporte formateado de errores y anomalias lexicas */
 string ErrorHandler::generarReporteErrores(const vector<Token>& errores) {
     ostringstream ss;
-    ss << "=== REPORTE DE ERRORES LEXICOS (LP) ===\r\n";
-    ss << "Total de errores encontrados: " << errores.size() << "\r\n";
+    ss << "=== REPORTE DE ERRORES Y ANOMALIAS LEXICAS (LP) ===\r\n";
+    ss << "Total de incidencias encontradas: " << errores.size() << "\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
 
     if (errores.empty()) {
@@ -217,7 +217,7 @@ string ErrorHandler::generarReporteErrores(const vector<Token>& errores) {
         return ss.str();
     }
 
-    ss << "LINEA      LEXEMA                        DESCRIPCION DEL ERROR\r\n";
+    ss << "LINEA      LEXEMA                        TIPO / DESCRIPCION DEL ERROR O ALERTA\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
     for (const auto& e : errores) {
         string lin = "Linea " + to_string(e.linea);
@@ -225,12 +225,14 @@ string ErrorHandler::generarReporteErrores(const vector<Token>& errores) {
         string lex = "'" + e.lexema + "'";
         if (lex.size() < 30) lex.resize(30, ' ');
         else lex += "  ";
+        string tipo = (e.mensaje.find("carece de sentido") != string::npos) ? "[ALERTA] " : "[ERROR]  ";
         string msg = e.mensaje.empty() ? "ERROR_LEXICO" : e.mensaje;
-        ss << lin << lex << msg << "\r\n";
+        ss << lin << lex << tipo << msg << "\r\n";
     }
 
     ss << "-------------------------------------------------------------------------------------------\r\n";
-    ss << "Nota: Los errores lexicos impiden continuar con el analisis sintactico de acuerdo a la especificacion.\r\n";
+    ss << "Nota: Las alertas indican anomalias que carecen de sentido logico/lexico (ej. ';;;;;;;;;').\r\n";
+    ss << "      Los errores lexicos impiden continuar con el analisis sintactico formal.\r\n";
     return ss.str();
 }
 

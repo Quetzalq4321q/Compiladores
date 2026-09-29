@@ -140,9 +140,20 @@ static void ejecutarAnalisis(HWND hWnd) {
             "  - errores.txt",
             "Analisis Exitoso", MB_ICONINFORMATION);
     } else {
-        string aviso = "Analisis completado con " + to_string(errores.size()) + " error(es) lexico(s).\n\n"
-                       "Revise la pestana 'Errores Lexicos' para ver los detalles.";
-        MessageBoxA(hWnd, aviso.c_str(), "Atencion: Errores Detectados", MB_ICONWARNING);
+        int cantAlertas = 0;
+        for (const auto& e : errores) {
+            if (e.mensaje.find("carece de sentido") != string::npos) cantAlertas++;
+        }
+        string aviso;
+        if (cantAlertas > 0 && cantAlertas == static_cast<int>(errores.size())) {
+            aviso = "Analisis completado con " + to_string(cantAlertas) + " alerta(s) de escritura.\n\n"
+                    "El compilador leyo los tokens pero detecto secuencias que carecen de sentido lexico/logico (ej. ';;;;;;;;;;;;;;;;;;;;').\n\n"
+                    "Revise la pestana 'Errores Lexicos' para ver el detalle de cada alerta.";
+        } else {
+            aviso = "Analisis completado con " + to_string(errores.size()) + " incidencia(s) (errores y/o anomalias de sentido lexico).\n\n"
+                    "Revise la pestana 'Errores Lexicos' para ver los detalles.";
+        }
+        MessageBoxA(hWnd, aviso.c_str(), "Atencion: Incidencias Detectadas", MB_ICONWARNING);
     }
 }
 

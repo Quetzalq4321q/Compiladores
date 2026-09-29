@@ -49,6 +49,13 @@ Esta versión representa la entrega formal y completa del proyecto según las di
   * `Dockerfile` multi-etapa optimizado sobre GCC 13 y Debian bookworm-slim con ejecución de pruebas unitarias automáticas durante la construcción.
   * Configuración `docker-compose.yml` para ejecución inmediata y mapeo de volúmenes de entrada/salida (`input/` y `output/`).
   * Compatibilidad multiplataforma en `FileConverter` para compilar en Linux sin dependencias Win32.
+* **Detección y Alertas de Anomalías Lógicas de Escritura (Carecen de Sentido)**:
+  * El analizador reconoce y procesa tokens repetidos pero alerta explícitamente sobre secuencias anómalas que carecen de sentido léxico o lógico:
+    * Secuencias masivas de puntos y comas (ej. `;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;`): genera los tokens `<;>` pero emite alerta de falta de sentido.
+    * Secuencias de comas repetidas (ej. `,,`, `,,,`).
+    * Operadores de asignación incongruentes (ej. `===`, `====`).
+    * Operadores aritméticos y de módulo repetidos consecutivamente (ej. `+++`, `---`, `***`, `%%%`).
+    * Operadores lógicos repetidos (ej. `&&&`, `|||`).
 * **Suite de Pruebas Unitarias Automatizadas (`test_lexer.exe`)**:
   * Test 1: Verificación del caso de prueba oficial de la Sección 12 con secuencia exacta.
   * Test 2: Operadores aritméticos y descarte correcto de comentarios.
@@ -56,6 +63,7 @@ Esta versión representa la entrega formal y completa del proyecto según las di
   * Test 4: Gestión de identificadores repetidos en la Tabla de Símbolos.
   * Test 5: Detección y reporte de errores léxicos.
   * Test 6: Validación de contención de errores y categorías de tokens.
+  * Test 7: Validación de lectura y alertas sobre anomalías de escritura carentes de sentido (`;;;;...`, `+++`, `===`).
 * **Automatización de Builds y Publicación**:
   * Script PowerShell `release.ps1` con compilación automática, empaquetado en ZIP de distribución, generación de imagen Docker y publicación automatizada mediante GitHub CLI (`gh`).
 

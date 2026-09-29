@@ -243,6 +243,15 @@ void Lexer::analizar() {
         /* 5. Operadores relacionales de 2 caracteres (==, !=, <=, >=) -> COMP */
         if (c == '=' && sig == '=') {
             avanzar(); avanzar();
+            if (actual() == '=') {
+                int cantIgual = 2;
+                while (actual() == '=') { cantIgual++; avanzar(); }
+                string lex(cantIgual, '=');
+                string msg = "Secuencia anomala de operadores de asignacion/comparacion ('" + lex + "'): carece de sentido en lenguaje LP";
+                tokens.push_back(Token(LexTokenType::OP_COMP, "==", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
             tokens.push_back(Token(LexTokenType::OP_COMP, "==", linIni));
             continue;
         }
@@ -265,11 +274,29 @@ void Lexer::analizar() {
         /* 6. Operadores logicos de 2 caracteres (&&, ||) */
         if (c == '&' && sig == '&') {
             avanzar(); avanzar();
+            if (actual() == '&') {
+                int cantAnd = 2;
+                while (actual() == '&') { cantAnd++; avanzar(); }
+                string lex(cantAnd, '&');
+                string msg = "Operadores logicos repetidos ('" + lex + "'): carece de sentido lexico en LP";
+                tokens.push_back(Token(LexTokenType::OP_AND, "&&", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
             tokens.push_back(Token(LexTokenType::OP_AND, "&&", linIni));
             continue;
         }
         if (c == '|' && sig == '|') {
             avanzar(); avanzar();
+            if (actual() == '|') {
+                int cantOr = 2;
+                while (actual() == '|') { cantOr++; avanzar(); }
+                string lex(cantOr, '|');
+                string msg = "Operadores logicos repetidos ('" + lex + "'): carece de sentido lexico en LP";
+                tokens.push_back(Token(LexTokenType::OP_OR, "||", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
             tokens.push_back(Token(LexTokenType::OP_OR, "||", linIni));
             continue;
         }
@@ -300,22 +327,127 @@ void Lexer::analizar() {
             continue;
         }
 
-        /* 10. Operadores aritmeticos (+, -, *, /, %) */
-        if (c == '+') { avanzar(); tokens.push_back(Token(LexTokenType::OP_SUM, "+", linIni)); continue; }
-        if (c == '-') { avanzar(); tokens.push_back(Token(LexTokenType::OP_SUB, "-", linIni)); continue; }
-        if (c == '*') { avanzar(); tokens.push_back(Token(LexTokenType::OP_MUL, "*", linIni)); continue; }
+        /* 10. Operadores aritmeticos (+, -, *, /, %) con deteccion de anomalias repetidas */
+        if (c == '+') {
+            avanzar();
+            if (actual() == '+') {
+                int cant = 1;
+                while (actual() == '+') { cant++; avanzar(); }
+                string lex(cant, '+');
+                string msg = "Operadores aritmeticos repetidos ('" + lex + "'): carece de sentido en LP (no existe operador de incremento '++')";
+                tokens.push_back(Token(LexTokenType::OP_SUM, "+", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
+            tokens.push_back(Token(LexTokenType::OP_SUM, "+", linIni));
+            continue;
+        }
+        if (c == '-') {
+            avanzar();
+            if (actual() == '-') {
+                int cant = 1;
+                while (actual() == '-') { cant++; avanzar(); }
+                string lex(cant, '-');
+                string msg = "Operadores aritmeticos repetidos ('" + lex + "'): carece de sentido en LP (no existe operador de decremento '--')";
+                tokens.push_back(Token(LexTokenType::OP_SUB, "-", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
+            tokens.push_back(Token(LexTokenType::OP_SUB, "-", linIni));
+            continue;
+        }
+        if (c == '*') {
+            avanzar();
+            if (actual() == '*') {
+                int cant = 1;
+                while (actual() == '*') { cant++; avanzar(); }
+                string lex(cant, '*');
+                string msg = "Operadores aritmeticos repetidos ('" + lex + "'): carece de sentido en LP";
+                tokens.push_back(Token(LexTokenType::OP_MUL, "*", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
+            tokens.push_back(Token(LexTokenType::OP_MUL, "*", linIni));
+            continue;
+        }
         if (c == '/') { avanzar(); tokens.push_back(Token(LexTokenType::OP_DIV, "/", linIni)); continue; }
-        if (c == '%') { avanzar(); tokens.push_back(Token(LexTokenType::OP_MOD, "%", linIni)); continue; }
+        if (c == '%') {
+            avanzar();
+            if (actual() == '%') {
+                int cant = 1;
+                while (actual() == '%') { cant++; avanzar(); }
+                string lex(cant, '%');
+                string msg = "Operadores de modulo repetidos ('" + lex + "'): carece de sentido en LP";
+                tokens.push_back(Token(LexTokenType::OP_MOD, "%", linIni));
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, msg));
+                continue;
+            }
+            tokens.push_back(Token(LexTokenType::OP_MOD, "%", linIni));
+            continue;
+        }
 
-        /* 11. Delimitadores y simbolos especiales */
+        /* 11. Delimitadores y simbolos especiales con deteccion de anomalias (ej: ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;) */
         if (c == '(') { avanzar(); tokens.push_back(Token(LexTokenType::LPAREN, "(", linIni)); continue; }
         if (c == ')') { avanzar(); tokens.push_back(Token(LexTokenType::RPAREN, ")", linIni)); continue; }
         if (c == '[') { avanzar(); tokens.push_back(Token(LexTokenType::LBRACKET, "[", linIni)); continue; }
         if (c == ']') { avanzar(); tokens.push_back(Token(LexTokenType::RBRACKET, "]", linIni)); continue; }
         if (c == '{') { avanzar(); tokens.push_back(Token(LexTokenType::LBRACE, "{", linIni)); continue; }
         if (c == '}') { avanzar(); tokens.push_back(Token(LexTokenType::RBRACE, "}", linIni)); continue; }
-        if (c == ',') { avanzar(); tokens.push_back(Token(LexTokenType::COMMA, ",", linIni)); continue; }
-        if (c == ';') { avanzar(); tokens.push_back(Token(LexTokenType::SEMICOLON, ";", linIni)); continue; }
+
+        /* Comas con deteccion de repeticiones redundantes (,,) */
+        if (c == ',') {
+            int cantComas = 0;
+            while (pos < fuente.size()) {
+                char ch = actual();
+                if (ch == ',') {
+                    cantComas++;
+                    tokens.push_back(Token(LexTokenType::COMMA, ",", linea));
+                    avanzar();
+                } else if (ch == ' ' || ch == '\t') {
+                    size_t pTemp = pos;
+                    while (pTemp < fuente.size() && (fuente[pTemp] == ' ' || fuente[pTemp] == '\t')) pTemp++;
+                    if (pTemp < fuente.size() && fuente[pTemp] == ',') pos = pTemp;
+                    else break;
+                } else {
+                    break;
+                }
+            }
+            if (cantComas > 1) {
+                string lexRep = string(min(cantComas, 15), ',');
+                string msg = "Secuencia anomala de " + to_string(cantComas) +
+                             " comas consecutivas ('" + lexRep + "'): carece de sentido logico en el codigo";
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lexRep, linIni, -1, msg));
+            }
+            continue;
+        }
+
+        /* Puntos y comas con deteccion de repeticiones redundantes (ej: ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;) */
+        if (c == ';') {
+            int cantSemicolons = 0;
+            while (pos < fuente.size()) {
+                char ch = actual();
+                if (ch == ';') {
+                    cantSemicolons++;
+                    tokens.push_back(Token(LexTokenType::SEMICOLON, ";", linea));
+                    avanzar();
+                } else if (ch == ' ' || ch == '\t') {
+                    size_t pTemp = pos;
+                    while (pTemp < fuente.size() && (fuente[pTemp] == ' ' || fuente[pTemp] == '\t')) pTemp++;
+                    if (pTemp < fuente.size() && fuente[pTemp] == ';') pos = pTemp;
+                    else break;
+                } else {
+                    break;
+                }
+            }
+            if (cantSemicolons > 1) {
+                string lexRep = string(min(cantSemicolons, 25), ';');
+                if (cantSemicolons > 25) lexRep += "...";
+                string msg = "Secuencia redundante de " + to_string(cantSemicolons) +
+                             " puntos y comas ('" + lexRep + "'): carece de sentido lexico y logico en el codigo";
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lexRep, linIni, -1, msg));
+            }
+            continue;
+        }
 
         /* 12. Operadores logicos incompletos */
         if (c == '&') {

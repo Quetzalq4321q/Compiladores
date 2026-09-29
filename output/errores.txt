@@ -1,4 +1,4 @@
-=== REPORTE DE ERRORES LEXICOS (LP) ===
-Total de errores encontrados: 0
+=== REPORTE DE ERRORES Y ANOMALIAS LEXICAS (LP) ===
+Total de incidencias encontradas: 0
 -------------------------------------------------------------------------------------------
 [ESTADO]: Codigo lexico valido al 100%. Sin errores detectados.
