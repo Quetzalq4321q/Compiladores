@@ -10,14 +10,14 @@ Analizador léxico desarrollado en C++20 para el lenguaje simplificado **LP (Len
 
 ---
 
-## 📚 Documentación del Proyecto
+##  Documentación del Proyecto
 
 Para consultar los detalles técnicos, guías y registros de evolución del proyecto, consulta los siguientes documentos:
 
-* 📄 **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones, nuevas características, correcciones y notas de lanzamiento bajo el estándar *Keep a Changelog* y *SemVer*.
-* 🛠️ **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases, estructuras, enumeraciones, métodos, algoritmos y firmas de funciones en el código fuente.
-* 🏛️ **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico, diseño de autómatas finitos deterministas (AFD) con diagramas Mermaid, pipeline de datos y estrategia de contención de errores en 3 niveles.
-* 📖 **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para ejecutar la aplicación, operar la interfaz gráfica de 4 pestañas, cargar archivos y consultar los reportes exportados en `output/`.
+*  **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones, nuevas características, correcciones y notas de lanzamiento bajo el estándar *Keep a Changelog* y *SemVer*.
+*  **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases, estructuras, enumeraciones, métodos, algoritmos y firmas de funciones en el código fuente.
+*  **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico, diseño de autómatas finitos deterministas (AFD) con diagramas Mermaid, pipeline de datos y estrategia de contención de errores en 3 niveles.
+*  **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para ejecutar la aplicación, operar la interfaz gráfica de 4 pestañas, cargar archivos y consultar los reportes exportados en `output/`.
 
 ---
 
@@ -114,7 +114,7 @@ cmake --build cmake-build-debug --target test_lexer
 
 ---
 
-## 4. 🐳 Entorno Docker (Dockeado)
+## 4.  Entorno Docker (Dockeado)
 
 El proyecto incluye soporte completo para ejecución contenedorizada en Linux mediante Docker y Docker Compose:
 
