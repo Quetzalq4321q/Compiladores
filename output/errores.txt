@@ -1,6 +1,4 @@
-=== ERRORES LEXICOS ===
-Total: 1 error(es)
+=== REPORTE DE ERRORES LEXICOS (LP) ===
+Total de errores encontrados: 0
 -------------------------------------------------------------------------------------------
-LINEA      LEXEMA                        DESCRIPCION DEL ERROR
--------------------------------------------------------------------------------------------
-Línea 1   '12.3.4'                      Numero con multiples puntos decimales ('12.3.4')
+[ESTADO]: Codigo lexico valido al 100%. Sin errores detectados.

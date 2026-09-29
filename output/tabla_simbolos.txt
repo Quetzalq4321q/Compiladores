@@ -1,6 +1,7 @@
-=== TABLA DE SIMBOLOS ===
-Total: 1 identificador(es)
----------------------------------------------------
-POS    IDENTIFICADOR         TIPO          LINEA INI   APARICIONES
----------------------------------------------------------------------------
-#0     nota                  desconocido   Linea 1     L1
+=== TABLA DE SIMBOLOS (IDENTIFICADORES LP) ===
+Total: 2 identificador(es) unico(s)
+-------------------------------------------------------------------------------------------
+POSICION   IDENTIFICADOR         LINEA INICIAL   APARICIONES
+-------------------------------------------------------------------------------------------
+0          edad                  Linea 2         L2, L4, L4
+1          promedio              Linea 3         L3

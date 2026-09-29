@@ -1,12 +1,50 @@
-=== SECUENCIA DE TOKENS POR LINEA ===
-<NUM_INT> <NUM_DEC> <ID,0> <INT>
+=== SECUENCIA DE TOKENS (FORMATO LP) ===
+<VOID> <MAIN> <(> <)> <{>
+<INT> <ID,0> <=> <NUM_INT> <;>
+<FLOAT> <ID,1> <=> <NUM_DEC> <;>
+<IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)> <{>
+<PRINTLN> <(> <TEXTO> <)> <;>
+<}>
+<RETURN> <;>
+<}>
 
-=== LISTA DETALLADA DE TOKENS ===
-Total: 4 token(s)
----------------------------------------------------
-#     TOKEN        LEXEMA         LINEA   COL
----------------------------------------------------
-1.    <NUM_INT>    13             1       1
-2.    <NUM_DEC>    15.66          1       4
-3.    <ID,0>       nota           1       17
-4.    <INT>        int            1       22
+=== TABLA DETALLADA DE TOKENS (ESPECIFICACION LP) ===
+Total: 35 token(s) reconocidos
+------------------------------------------------------------------------------------------------------
+#      TOKEN            LEXEMA               CATEGORIA DEL TOKEN                    LINEA
+------------------------------------------------------------------------------------------------------
+1.     <VOID>           void                 Palabra reservada                      1
+2.     <MAIN>           main                 Palabra reservada                      1
+3.     <(>              (                    Simbolo especial                       1
+4.     <)>              )                    Simbolo especial                       1
+5.     <{>              {                    Simbolo especial                       1
+6.     <INT>            int                  Palabra reservada                      2
+7.     <ID,0>           edad                 Identificador                          2
+8.     <=>              =                    Operador de Asignacion                 2
+9.     <NUM_INT>        20                   Numero entero                          2
+10.    <;>              ;                    Simbolo especial                       2
+11.    <FLOAT>          float                Palabra reservada                      3
+12.    <ID,1>           promedio             Identificador                          3
+13.    <=>              =                    Operador de Asignacion                 3
+14.    <NUM_DEC>        15.5                 Numero decimal                         3
+15.    <;>              ;                    Simbolo especial                       3
+16.    <IF>             if                   Palabra reservada                      4
+17.    <(>              (                    Simbolo especial                       4
+18.    <ID,0>           edad                 Identificador                          4
+19.    <COMP>           >=                   Operador de Comparacion/Relacionales   4
+20.    <NUM_INT>        18                   Numero entero                          4
+21.    <&&>             &&                   Operador logico                        4
+22.    <ID,0>           edad                 Identificador                          4
+23.    <COMP>           <=                   Operador de Comparacion/Relacionales   4
+24.    <NUM_INT>        60                   Numero entero                          4
+25.    <)>              )                    Simbolo especial                       4
+26.    <{>              {                    Simbolo especial                       4
+27.    <PRINTLN>        println              Palabra reservada                      5
+28.    <(>              (                    Simbolo especial                       5
+29.    <TEXTO>          "Edad valida"        Constantes de texto                    5
+30.    <)>              )                    Simbolo especial                       5
+31.    <;>              ;                    Simbolo especial                       5
+32.    <}>              }                    Simbolo especial                       6
+33.    <RETURN>         return               Palabra reservada                      7
+34.    <;>              ;                    Simbolo especial                       7
+35.    <}>              }                    Simbolo especial                       8
