@@ -5,28 +5,31 @@
 
 using namespace std;
 
+/* Diccionario de palabras reservadas del lenguaje LP */
 static const map<string, LexTokenType> PALABRAS_RESERVADAS = {
-    {"int",    LexTokenType::KW_INT},
-    {"float",  LexTokenType::KW_FLOAT},
-    {"string", LexTokenType::KW_STRING},
-    {"bool",   LexTokenType::KW_BOOL},
-    {"char",   LexTokenType::KW_CHAR},
-    {"if",     LexTokenType::KW_IF},
-    {"else",   LexTokenType::KW_ELSE},
-    {"while",  LexTokenType::KW_WHILE},
-    {"for",    LexTokenType::KW_FOR},
-    {"return", LexTokenType::KW_RETURN},
-    {"void",   LexTokenType::KW_VOID},
-    {"true",   LexTokenType::KW_TRUE},
-    {"false",  LexTokenType::KW_FALSE},
-    {"print",  LexTokenType::KW_PRINT}
+    {"int",     LexTokenType::KW_INT},
+    {"float",   LexTokenType::KW_FLOAT},
+    {"char",    LexTokenType::KW_CHAR},
+    {"boolean", LexTokenType::KW_BOOLEAN},
+    {"bool",    LexTokenType::KW_BOOLEAN},
+    {"void",    LexTokenType::KW_VOID},
+    {"if",      LexTokenType::KW_IF},
+    {"else",    LexTokenType::KW_ELSE},
+    {"for",     LexTokenType::KW_FOR},
+    {"while",   LexTokenType::KW_WHILE},
+    {"scanf",   LexTokenType::KW_SCANF},
+    {"println", LexTokenType::KW_PRINTLN},
+    {"print",   LexTokenType::KW_PRINTLN},
+    {"main",    LexTokenType::KW_MAIN},
+    {"return",  LexTokenType::KW_RETURN},
+    {"string",  LexTokenType::KW_STRING}
 };
 
-/* Constructor: inicia en la primera linea y caracter */
+/* Constructor: inicializa posicion y linea */
 Lexer::Lexer(const string& fuente)
-    : fuente(fuente), pos(0), linea(1), columna(1), ultimoTipoLeido(""), ultimoToken() {}
+    : fuente(fuente), pos(0), linea(1) {}
 
-/* Caracter actual en la posicion de lectura */
+/* Caracter actual en el flujo */
 char Lexer::actual() const {
     if (pos >= fuente.size()) return '\0';
     return fuente[pos];
@@ -38,40 +41,15 @@ char Lexer::siguiente() const {
     return fuente[pos + 1];
 }
 
-/* Busca el siguiente caracter no vacio sin alterar la posicion */
-char Lexer::mirarSiguienteNoEspacio() const {
-    size_t i = pos + 1;
-    while (i < fuente.size()) {
-        char c = fuente[i];
-        if (isspace(static_cast<unsigned char>(c))) {
-            i++;
-            continue;
-        }
-        return c;
-    }
-    return '\0';
-}
-
-/* Registra un token reconocido y actualiza el ultimoToken procesado */
-void Lexer::agregarToken(const Token& t) {
-    tokens.push_back(t);
-    ultimoToken = t;
-}
-
-/* Avanza una posicion y controla el conteo de lineas y columnas */
+/* Avanza la posicion de lectura y actualiza numero de linea */
 void Lexer::avanzar() {
     if (pos < fuente.size()) {
-        if (fuente[pos] == '\n') {
-            linea++;
-            columna = 1;
-        } else {
-            columna++;
-        }
+        if (fuente[pos] == '\n') linea++;
         pos++;
     }
 }
 
-/* Consume espacios, tabulaciones y comentarios */
+/* Consume espacios en blanco y descarta comentarios segun la especificacion //.*\n */
 void Lexer::saltarEspaciosYComentarios() {
     while (pos < fuente.size()) {
         char c = actual();
@@ -80,25 +58,33 @@ void Lexer::saltarEspaciosYComentarios() {
             continue;
         }
 
-        // Comentario con '#'
-        if (c == '#') {
+        /* Comentario de una linea: //.*\n */
+        if (c == '/' && siguiente() == '/') {
+            avanzar(); /* primer '/' */
+            avanzar(); /* segundo '/' */
             while (pos < fuente.size() && actual() != '\n') {
                 avanzar();
             }
             continue;
         }
 
-        // Comentario multilineal '/* ... */'
+        /* Comentario de bloque: /* ... * / */
         if (c == '/' && siguiente() == '*') {
-            avanzar(); // '/'
-            avanzar(); // '*'
+            int linCom = linea;
+            avanzar(); /* '/' */
+            avanzar(); /* '*' */
+            bool cerrado = false;
             while (pos < fuente.size()) {
                 if (actual() == '*' && siguiente() == '/') {
-                    avanzar(); // '*'
-                    avanzar(); // '/'
+                    avanzar(); /* '*' */
+                    avanzar(); /* '/' */
+                    cerrado = true;
                     break;
                 }
                 avanzar();
+            }
+            if (!cerrado) {
+                errores.push_back(Token(LexTokenType::LEX_ERROR, "/*", linCom, -1, "Comentario de bloque sin cerrar"));
             }
             continue;
         }
@@ -107,9 +93,9 @@ void Lexer::saltarEspaciosYComentarios() {
     }
 }
 
-/* Procesa cadenas de texto entre comillas */
-Token Lexer::lexTexto(int linIni, int colIni, char delim) {
-    avanzar(); // Consume comilla inicial
+/* Reconoce literales de texto entre comillas */
+Token Lexer::lexTexto(int linIni, char delim) {
+    avanzar(); /* Consume comilla inicial */
     size_t inicio = pos;
     bool cerrado = false;
 
@@ -124,24 +110,24 @@ Token Lexer::lexTexto(int linIni, int colIni, char delim) {
             cerrado = true;
             break;
         }
-        if (c == '\n') break; // No multilinea
+        if (c == '\n') break;
         avanzar();
     }
 
     if (cerrado) {
         string contenido = fuente.substr(inicio, pos - inicio);
-        avanzar(); // Consume comilla final
+        avanzar(); /* Consume comilla final */
         string lexema = string(1, delim) + contenido + string(1, delim);
-        return Token(LexTokenType::TEXTO, lexema, linIni, colIni);
+        return Token(LexTokenType::TEXTO, lexema, linIni);
     }
 
     string incompleto = string(1, delim) + fuente.substr(inicio, pos - inicio);
-    errores.push_back(Token(LexTokenType::LEX_ERROR, incompleto, linIni, colIni));
-    return Token(LexTokenType::LEX_ERROR, incompleto, linIni, colIni);
+    errores.push_back(Token(LexTokenType::LEX_ERROR, incompleto, linIni, -1, "Cadena de texto sin cerrar"));
+    return Token(LexTokenType::LEX_ERROR, incompleto, linIni, -1, "Cadena de texto sin cerrar");
 }
 
-/* Reconoce NUM_INT o NUM_DEC con validacion de multiples puntos y sufijos alfanumericos */
-Token Lexer::lexNumero(int linIni, int colIni) {
+/* Reconoce NUM_INT (D+) o NUM_DEC (D+\.D+) con deteccion de anomalias */
+Token Lexer::lexNumero(int linIni) {
     size_t inicio = pos;
     int puntos = 0;
 
@@ -150,270 +136,209 @@ Token Lexer::lexNumero(int linIni, int colIni) {
         if (isdigit(static_cast<unsigned char>(c))) {
             avanzar();
         } else if (c == '.') {
-            // Verificar si hay doble punto consecutivo '..'
-            if (siguiente() == '.') {
-                avanzar(); // primer .
-                avanzar(); // segundo .
-                while (pos < fuente.size() && (isalnum(static_cast<unsigned char>(actual())) || actual() == '.')) {
+            if (isdigit(static_cast<unsigned char>(siguiente()))) {
+                puntos++;
+                if (puntos > 1) {
                     avanzar();
+                    while (pos < fuente.size() && (isalnum(static_cast<unsigned char>(actual())) || actual() == '.')) {
+                        avanzar();
+                    }
+                    string lexErr = fuente.substr(inicio, pos - inicio);
+                    errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Numero con multiples puntos decimales"));
+                    return Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Numero con multiples puntos decimales");
                 }
-                string lexErr = fuente.substr(inicio, pos - inicio);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Duplicidad de puntos consecutivos en numero ('..')"));
-                return Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Duplicidad de puntos consecutivos en numero ('..')");
-            }
-
-            puntos+ .0+;
-            if (puntos > 1) {
-                // Multiples puntos decimales (ej. 12.3.4)
+                avanzar();
+            } else {
                 avanzar();
                 while (pos < fuente.size() && (isalnum(static_cast<unsigned char>(actual())) || actual() == '.')) {
                     avanzar();
                 }
                 string lexErr = fuente.substr(inicio, pos - inicio);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Numero con multiples puntos decimales ('" + lexErr + "')"));
-                return Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Numero con multiples puntos decimales ('" + lexErr + "')");
+                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Numero decimal mal formado (falta parte decimal)"));
+                return Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Numero decimal mal formado (falta parte decimal)");
             }
-
-            // Punto decimal: debe venir un digito
-            if (!isdigit(static_cast<unsigned char>(siguiente()))) {
-                avanzar();
-                string lexErr = fuente.substr(inicio, pos - inicio);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Numero decimal mal formado (falta digito despues del punto: '" + lexErr + "')"));
-                return Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Numero decimal mal formado (falta digito despues del punto: '" + lexErr + "')");
-            }
-            avanzar();
         } else {
             break;
         }
     }
 
-    // Identificador invalido que empieza con digitos (ej. 20edad, 20var)
+    /* Valida que no empiece un identificador invalido con digitos (ej. 20edad) */
     if (pos < fuente.size() && (isalpha(static_cast<unsigned char>(actual())) || actual() == '_')) {
         while (pos < fuente.size() && (isalnum(static_cast<unsigned char>(actual())) || actual() == '_')) {
             avanzar();
         }
         string lexErr = fuente.substr(inicio, pos - inicio);
-        errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Identificador invalido: no puede comenzar con digitos ('" + lexErr + "')"));
-        return Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Identificador invalido: no puede comenzar con digitos ('" + lexErr + "')");
+        errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Identificador invalido: no puede comenzar con digitos"));
+        return Token(LexTokenType::LEX_ERROR, lexErr, linIni, -1, "Identificador invalido: no puede comenzar con digitos");
     }
 
     string lexema = fuente.substr(inicio, pos - inicio);
     if (puntos == 1) {
-        return Token(LexTokenType::NUM_DEC, lexema, linIni, colIni);
+        return Token(LexTokenType::NUM_DEC, lexema, linIni);
     }
-    return Token(LexTokenType::NUM_INT, lexema, linIni, colIni);
+    return Token(LexTokenType::NUM_INT, lexema, linIni);
 }
 
 /* Reconoce identificadores y palabras reservadas */
-Token Lexer::lexIdentificadorOPalabra(int linIni, int colIni) {
+Token Lexer::lexIdentificadorOPalabra(int linIni) {
     size_t inicio = pos;
-
-    while (pos < fuente.size()) {
-        char c = actual();
-        if (isalnum(static_cast<unsigned char>(c)) || c == '_') {
-            avanzar();
-        } else {
-            break;
-        }
+    while (pos < fuente.size() && (isalnum(static_cast<unsigned char>(actual())) || actual() == '_')) {
+        avanzar();
     }
-
     string lexema = fuente.substr(inicio, pos - inicio);
 
-    // Comprobar palabra reservada
     auto it = PALABRAS_RESERVADAS.find(lexema);
     if (it != PALABRAS_RESERVADAS.end()) {
-        if (lexema == "int" || lexema == "float" || lexema == "string" || lexema == "bool" || lexema == "char") {
-            ultimoTipoLeido = lexema;
-        }
-        return Token(it->second, lexema, linIni, colIni);
+        return Token(it->second, lexema, linIni);
     }
 
-    // Es identificador (ID): registrar en la tabla de simbolos
-    int idx = tabla.agregar(lexema, ultimoTipoLeido, linIni);
-    ultimoTipoLeido = ""; // Reiniciar tipo
-
-    return Token(LexTokenType::ID, lexema, linIni, colIni, idx);
+    /* Identificador valido: registrar en la tabla de simbolos */
+    int idx = tabla.agregar(lexema, linIni);
+    return Token(LexTokenType::ID, lexema, linIni, idx);
 }
 
-/* Proceso principal de analisis lexico */
+/* Bucle principal del analizador lexico */
 void Lexer::analizar() {
     tokens.clear();
     errores.clear();
     tabla.limpiar();
     pos = 0;
     linea = 1;
-    columna = 1;
-    ultimoTipoLeido = "";
-    ultimoToken = Token();
 
     while (pos < fuente.size()) {
         saltarEspaciosYComentarios();
         if (pos >= fuente.size()) break;
 
         int linIni = linea;
-        int colIni = columna;
         char c = actual();
         char sig = siguiente();
 
-        // 1. Cadenas de texto
+        /* 1. Cadenas de texto */
         if (c == '"' || c == '\'') {
-            Token t = lexTexto(linIni, colIni, c);
-            if (t.tipo != LexTokenType::LEX_ERROR) agregarToken(t);
+            Token t = lexTexto(linIni, c);
+            if (t.tipo != LexTokenType::LEX_ERROR) tokens.push_back(t);
             continue;
         }
 
-        // 2. Numeros
+        /* 2. Numeros enteros o decimales */
         if (isdigit(static_cast<unsigned char>(c))) {
-            Token t = lexNumero(linIni, colIni);
-            if (t.tipo != LexTokenType::LEX_ERROR) agregarToken(t);
+            Token t = lexNumero(linIni);
+            if (t.tipo != LexTokenType::LEX_ERROR) tokens.push_back(t);
             continue;
         }
 
-        // 3. Puntos sueltos o dobles puntos '..' aislados
+        /* 3. Puntos sueltos no numericos */
         if (c == '.') {
-            if (sig == '.') {
-                size_t inicioErr = pos;
-                while (pos < fuente.size() && actual() == '.') {
-                    avanzar();
-                }
-                string lexErr = fuente.substr(inicioErr, pos - inicioErr);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Duplicidad de puntos ('" + lexErr + "') carece de sentido"));
-                continue;
-            }
             avanzar();
-            errores.push_back(Token(LexTokenType::LEX_ERROR, ".", linIni, colIni, -1, "Punto flotante aislado '.' carece de sentido"));
+            errores.push_back(Token(LexTokenType::LEX_ERROR, ".", linIni, -1, "Punto aislado no reconocido"));
             continue;
         }
 
-        // 4. Doble coma repetida (,, o , ,)
-        if (c == ',') {
-            char sigNoEsp = mirarSiguienteNoEspacio();
-            if (sigNoEsp == ',') {
-                avanzar();
-                saltarEspaciosYComentarios();
-                avanzar();
-                errores.push_back(Token(LexTokenType::LEX_ERROR, ",,", linIni, colIni, -1, "Duplicidad de comas (',,') carece de sentido"));
-                continue;
-            }
-            if (sigNoEsp == ';') {
-                avanzar();
-                errores.push_back(Token(LexTokenType::LEX_ERROR, ",;", linIni, colIni, -1, "Coma huerfana antes del punto y coma (',;')"));
-                continue;
-            }
-            avanzar();
-            agregarToken(Token(LexTokenType::COMMA, ",", linIni, colIni));
-            continue;
-        }
-
-        // 5. Doble punto y coma repetido (;; o ; ;)
-        if (c == ';') {
-            char sigNoEsp = mirarSiguienteNoEspacio();
-            if (sigNoEsp == ';') {
-                avanzar();
-                saltarEspaciosYComentarios();
-                avanzar();
-                errores.push_back(Token(LexTokenType::LEX_ERROR, ";;", linIni, colIni, -1, "Duplicidad de punto y coma (';;') carece de sentido"));
-                agregarToken(Token(LexTokenType::SEMICOLON, ";", linIni, colIni));
-                continue;
-            }
-
-            // Validar operador huerfano antes de punto y coma (ej. edad + ;)
-            if (ultimoToken.tipo == LexTokenType::OP_ASSIGN  ||
-                ultimoToken.tipo == LexTokenType::OP_SUM     ||
-                ultimoToken.tipo == LexTokenType::OP_SUB     ||
-                ultimoToken.tipo == LexTokenType::OP_MUL     ||
-                ultimoToken.tipo == LexTokenType::OP_DIV     ||
-                ultimoToken.tipo == LexTokenType::OP_DIV_INT ||
-                ultimoToken.tipo == LexTokenType::OP_MOD     ||
-                ultimoToken.tipo == LexTokenType::OP_EQ      ||
-                ultimoToken.tipo == LexTokenType::OP_NE      ||
-                ultimoToken.tipo == LexTokenType::OP_LT      ||
-                ultimoToken.tipo == LexTokenType::OP_GT      ||
-                ultimoToken.tipo == LexTokenType::OP_LE      ||
-                ultimoToken.tipo == LexTokenType::OP_GE) {
-                errores.push_back(Token(LexTokenType::LEX_ERROR, ultimoToken.lexema + " ;", ultimoToken.linea, ultimoToken.columna, -1,
-                    "Operador '" + ultimoToken.lexema + "' sin operando derecho antes de ';'"));
-            }
-
-            avanzar();
-            ultimoTipoLeido = "";
-            agregarToken(Token(LexTokenType::SEMICOLON, ";", linIni, colIni));
-            continue;
-        }
-
-        // 6. Identificadores o palabras reservadas
+        /* 4. Identificadores y palabras reservadas */
         if (isalpha(static_cast<unsigned char>(c)) || c == '_') {
-            agregarToken(lexIdentificadorOPalabra(linIni, colIni));
+            tokens.push_back(lexIdentificadorOPalabra(linIni));
             continue;
         }
 
-        // 7. Barras y division entera: validar /// o mas
-        if (c == '/' && sig == '/') {
-            if (pos + 2 < fuente.size() && fuente[pos + 2] == '/') {
-                size_t inicioErr = pos;
-                while (pos < fuente.size() && actual() == '/') {
-                    avanzar();
-                }
-                string lexErr = fuente.substr(inicioErr, pos - inicioErr);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lexErr, linIni, colIni, -1, "Secuencia de barras '" + lexErr + "' no valida"));
-                continue;
-            }
-            avanzar(); avanzar();
-            agregarToken(Token(LexTokenType::OP_DIV_INT, "//", linIni, colIni));
-            continue;
-        }
-
-        // 8. Operadores compuestos de 2 caracteres
+        /* 5. Operadores relacionales de 2 caracteres (==, !=, <=, >=) -> COMP */
         if (c == '=' && sig == '=') {
             avanzar(); avanzar();
-            agregarToken(Token(LexTokenType::OP_EQ, "==", linIni, colIni));
+            tokens.push_back(Token(LexTokenType::OP_COMP, "==", linIni));
             continue;
         }
         if (c == '!' && sig == '=') {
             avanzar(); avanzar();
-            agregarToken(Token(LexTokenType::OP_NE, "!=", linIni, colIni));
+            tokens.push_back(Token(LexTokenType::OP_COMP, "!=", linIni));
             continue;
         }
         if (c == '<' && sig == '=') {
             avanzar(); avanzar();
-            agregarToken(Token(LexTokenType::OP_LE, "<=", linIni, colIni));
+            tokens.push_back(Token(LexTokenType::OP_COMP, "<=", linIni));
             continue;
         }
         if (c == '>' && sig == '=') {
             avanzar(); avanzar();
-            agregarToken(Token(LexTokenType::OP_GE, ">=", linIni, colIni));
+            tokens.push_back(Token(LexTokenType::OP_COMP, ">=", linIni));
             continue;
         }
 
-        // 9. Operadores y delimitadores simples
-        switch (c) {
-            case '=': avanzar(); agregarToken(Token(LexTokenType::OP_ASSIGN, "=", linIni, colIni)); break;
-            case '+': avanzar(); agregarToken(Token(LexTokenType::OP_SUM, "+", linIni, colIni)); break;
-            case '-': avanzar(); agregarToken(Token(LexTokenType::OP_SUB, "-", linIni, colIni)); break;
-            case '*': avanzar(); agregarToken(Token(LexTokenType::OP_MUL, "*", linIni, colIni)); break;
-            case '/': avanzar(); agregarToken(Token(LexTokenType::OP_DIV, "/", linIni, colIni)); break;
-            case '%': avanzar(); agregarToken(Token(LexTokenType::OP_MOD, "%", linIni, colIni)); break;
-            case '<': avanzar(); agregarToken(Token(LexTokenType::OP_LT, "<", linIni, colIni)); break;
-            case '>': avanzar(); agregarToken(Token(LexTokenType::OP_GT, ">", linIni, colIni)); break;
-            case '(': avanzar(); agregarToken(Token(LexTokenType::LPAREN, "(", linIni, colIni)); break;
-            case ')': avanzar(); agregarToken(Token(LexTokenType::RPAREN, ")", linIni, colIni)); break;
-            case '{': avanzar(); agregarToken(Token(LexTokenType::LBRACE, "{", linIni, colIni)); break;
-            case '}': avanzar(); agregarToken(Token(LexTokenType::RBRACE, "}", linIni, colIni)); break;
-            default: {
-                string lex(1, c);
-                errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, colIni, -1, "Caracter no reconocido '" + lex + "'"));
-                avanzar();
-                break;
-            }
+        /* 6. Operadores logicos de 2 caracteres (&&, ||) */
+        if (c == '&' && sig == '&') {
+            avanzar(); avanzar();
+            tokens.push_back(Token(LexTokenType::OP_AND, "&&", linIni));
+            continue;
         }
+        if (c == '|' && sig == '|') {
+            avanzar(); avanzar();
+            tokens.push_back(Token(LexTokenType::OP_OR, "||", linIni));
+            continue;
+        }
+
+        /* 7. Operadores relacionales simples (<, >) -> COMP */
+        if (c == '<') {
+            avanzar();
+            tokens.push_back(Token(LexTokenType::OP_COMP, "<", linIni));
+            continue;
+        }
+        if (c == '>') {
+            avanzar();
+            tokens.push_back(Token(LexTokenType::OP_COMP, ">", linIni));
+            continue;
+        }
+
+        /* 8. Operador de asignacion (=) */
+        if (c == '=') {
+            avanzar();
+            tokens.push_back(Token(LexTokenType::OP_ASSIGN, "=", linIni));
+            continue;
+        }
+
+        /* 9. Operador de negacion logica (!) */
+        if (c == '!') {
+            avanzar();
+            tokens.push_back(Token(LexTokenType::OP_NOT, "!", linIni));
+            continue;
+        }
+
+        /* 10. Operadores aritmeticos (+, -, *, /, %) */
+        if (c == '+') { avanzar(); tokens.push_back(Token(LexTokenType::OP_SUM, "+", linIni)); continue; }
+        if (c == '-') { avanzar(); tokens.push_back(Token(LexTokenType::OP_SUB, "-", linIni)); continue; }
+        if (c == '*') { avanzar(); tokens.push_back(Token(LexTokenType::OP_MUL, "*", linIni)); continue; }
+        if (c == '/') { avanzar(); tokens.push_back(Token(LexTokenType::OP_DIV, "/", linIni)); continue; }
+        if (c == '%') { avanzar(); tokens.push_back(Token(LexTokenType::OP_MOD, "%", linIni)); continue; }
+
+        /* 11. Delimitadores y simbolos especiales */
+        if (c == '(') { avanzar(); tokens.push_back(Token(LexTokenType::LPAREN, "(", linIni)); continue; }
+        if (c == ')') { avanzar(); tokens.push_back(Token(LexTokenType::RPAREN, ")", linIni)); continue; }
+        if (c == '[') { avanzar(); tokens.push_back(Token(LexTokenType::LBRACKET, "[", linIni)); continue; }
+        if (c == ']') { avanzar(); tokens.push_back(Token(LexTokenType::RBRACKET, "]", linIni)); continue; }
+        if (c == '{') { avanzar(); tokens.push_back(Token(LexTokenType::LBRACE, "{", linIni)); continue; }
+        if (c == '}') { avanzar(); tokens.push_back(Token(LexTokenType::RBRACE, "}", linIni)); continue; }
+        if (c == ',') { avanzar(); tokens.push_back(Token(LexTokenType::COMMA, ",", linIni)); continue; }
+        if (c == ';') { avanzar(); tokens.push_back(Token(LexTokenType::SEMICOLON, ";", linIni)); continue; }
+
+        /* 12. Operadores logicos incompletos */
+        if (c == '&') {
+            avanzar();
+            errores.push_back(Token(LexTokenType::LEX_ERROR, "&", linIni, -1, "Operador logico incompleto (esperaba '&&')"));
+            continue;
+        }
+        if (c == '|') {
+            avanzar();
+            errores.push_back(Token(LexTokenType::LEX_ERROR, "|", linIni, -1, "Operador logico incompleto (esperaba '||')"));
+            continue;
+        }
+
+        /* 13. Caracter no reconocido (ej: @, $, #, etc.) */
+        string lex(1, c);
+        errores.push_back(Token(LexTokenType::LEX_ERROR, lex, linIni, -1, "Caracter no reconocido '" + lex + "'"));
+        avanzar();
     }
 }
 
-/* Genera la salida agrupada por linea:
-   <INT> <ID,0> <=> <NUM_INT> <;>
-   <FLOAT> <ID,1> <=> <ID,0> <//> <NUM_INT> <;> */
+/* Genera la secuencia exacta de tokens agrupados por linea */
 string Lexer::getSalidaPorLineas() const {
-    if (tokens.empty()) return "(Sin tokens)";
+    if (tokens.empty()) return "(Sin tokens reconocidos)";
 
     map<int, vector<Token>> porLinea;
     for (const auto& t : tokens) {
@@ -421,9 +346,9 @@ string Lexer::getSalidaPorLineas() const {
     }
 
     ostringstream ss;
-    bool primera = true;|
+    bool primera = true;
     for (const auto& p : porLinea) {
-        if (!primera) ss << "\n";
+        if (!primera) ss << "\r\n";
         primera = false;
         bool primerToken = true;
         for (const auto& t : p.second) {

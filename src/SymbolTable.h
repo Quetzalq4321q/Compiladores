@@ -5,35 +5,34 @@
 
 using namespace std;
 
-/* Entrada detallada en la tabla de simbolos */
+/* Entrada en la tabla de simbolos */
 struct SymbolEntry {
-    int          pos;
-    string       nombre;
-    string       tipo;
-    int          lineaIni;
-    vector<int>  apariciones;
+    int         pos;
+    string      nombre;
+    int         lineaIni;
+    vector<int> apariciones;
 };
 
-/* Gestiona identificadores unicos encontrados durante el analisis */
+/* Gestiona identificadores unicos segun la especificacion del lenguaje LP */
 class SymbolTable {
 public:
-    /* Agrega un identificador si no existe y devuelve su indice (base 0).
-       Si ya existe, registra la nueva linea de aparicion. */
-    int agregar(const string& nombre, const string& tipo = "", int linea = 1);
+    /* Agrega identificador si no existe y devuelve su posicion (base 0).
+       Si ya existe, retorna su posicion previa y registra la linea de aparicion. */
+    int agregar(const string& nombre, int linea = 1);
 
     /* Busca un identificador; retorna posicion o -1 si no existe */
     int buscar(const string& nombre) const;
 
-    /* Lista de simbolos almacenados (solo nombres) */
-    vector<string> getSimbolos() const;
-
     /* Lista completa de entradas con metadatos */
     const vector<SymbolEntry>& getEntradas() const;
 
-    /* Verifica si la tabla aun no tiene simbolos */
+    /* Lista de nombres de identificadores */
+    vector<string> getSimbolos() const;
+
+    /* Comprueba si la tabla esta vacia */
     bool vacia() const;
 
-    /* Reinicia la tabla de simbolos */
+    /* Limpia la tabla */
     void limpiar();
 
 private:

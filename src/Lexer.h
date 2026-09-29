@@ -7,40 +7,38 @@
 
 using namespace std;
 
-/* Analizador lexico para el lenguaje LP con soporte para ID, TEXTO, palabras reservadas y tabla */
+/* Analizador lexico completo para el lenguaje LP */
 class Lexer {
 public:
-    /* Inicializa con el contenido del archivo fuente */
+    /* Inicializa con el codigo fuente */
     explicit Lexer(const string& fuente);
 
-    /* Recorre el texto y genera la lista de tokens, errores y tabla de simbolos */
+    /* Ejecuta el analisis lexico generando tokens, tabla de simbolos y errores */
     void analizar();
 
-    /* Devuelve los tokens reconocidos */
+    /* Devuelve la lista secuencial de tokens reconocidos */
     const vector<Token>& getTokens() const;
 
-    /* Devuelve la tabla de simbolos */
+    /* Devuelve la tabla de simbolos (identificadores unicos) */
     const SymbolTable& getTabla() const;
 
     /* Devuelve los errores lexicos detectados */
     const vector<Token>& getErrores() const;
 
-    /* Devuelve la salida formateada agrupada por linea:
+    /* Devuelve la secuencia de tokens formateada por lineas:
+       <VOID> <MAIN> <(> <)> <{>
        <INT> <ID,0> <=> <NUM_INT> <;>
-       <FLOAT> <ID,1> <=> <ID,0> <//> <NUM_INT> <;> */
+       ... */
     string getSalidaPorLineas() const;
 
 private:
     const string   fuente;
     size_t         pos;
     int            linea;
-    int            columna;
 
     vector<Token>  tokens;
     SymbolTable    tabla;
     vector<Token>  errores;
-    string         ultimoTipoLeido;
-    Token          ultimoToken;
 
     /* Retorna el caracter actual */
     char actual() const;
@@ -48,24 +46,18 @@ private:
     /* Retorna el caracter siguiente sin consumirlo */
     char siguiente() const;
 
-    /* Busca el siguiente caracter no vacio sin consumir espacios */
-    char mirarSiguienteNoEspacio() const;
-
-    /* Avanza un caracter y actualiza contadores de linea y columna */
+    /* Avanza una posicion en el texto y actualiza contador de lineas */
     void avanzar();
 
-    /* Salta espacios en blanco y comentarios (# y comentarios multilineales) */
+    /* Salta espacios en blanco y descarta comentarios (// y multilineas) */
     void saltarEspaciosYComentarios();
 
-    /* Extrae un numero entero o decimal con validacion de puntos y sufijos invalidos */
-    Token lexNumero(int linIni, int colIni);
+    /* Reconoce cadenas de texto ("...") */
+    Token lexTexto(int linIni, char delim);
 
-    /* Extrae identificadores o palabras reservadas */
-    Token lexIdentificadorOPalabra(int linIni, int colIni);
+    /* Reconoce numeros enteros (NUM_INT) y decimales (NUM_DEC) */
+    Token lexNumero(int linIni);
 
-    /* Extrae cadenas de texto delimitadas por comillas */
-    Token lexTexto(int linIni, int colIni, char delim);
-
-    /* Registra token y actualiza ultimoToken */
-    void agregarToken(const Token& t);
+    /* Reconoce identificadores y palabras reservadas */
+    Token lexIdentificadorOPalabra(int linIni);
 };

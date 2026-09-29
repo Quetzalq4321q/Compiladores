@@ -47,7 +47,7 @@ static string obtenerDirEjecutable() {
     return "";
 }
 
-/* Pone el texto en un control EDIT convirtiendo saltos de linea a formato Windows */
+/* Setea texto en un control EDIT convirtiendo saltos de linea a formato Windows */
 static void setEditText(HWND hEdit, const string& texto) {
     string conv;
     conv.reserve(texto.size() * 2);
@@ -101,7 +101,7 @@ static void ejecutarAnalisis(HWND hWnd) {
         return;
     }
 
-    /* Analisis lexico */
+    /* Analisis lexico completo */
     Lexer lexer(fuente);
     lexer.analizar();
 
@@ -109,74 +109,67 @@ static void ejecutarAnalisis(HWND hWnd) {
     const SymbolTable&   tabla   = lexer.getTabla();
     const vector<Token>& errores = lexer.getErrores();
 
-    /* Pestana 0: Lista de tokens */
+    /* Pestana 1: Lista y secuencia de tokens */
     string strTokens;
     {
         ostringstream ss;
-        ss << "=== SECUENCIA DE TOKENS POR LINEA ===\r\n";
+        ss << "=== SECUENCIA DE TOKENS (FORMATO LP) ===\r\n";
         ss << lexer.getSalidaPorLineas() << "\r\n\r\n";
-        ss << "=== LISTA DETALLADA DE TOKENS ===\r\n";
+        ss << "=== LISTA SECUENCIAL DETALLADA DE TOKENS ===\r\n";
         ss << "Total: " << tokens.size() << " token(s)\r\n";
-        ss << "---------------------------------------------------\r\n";
+        ss << "--------------------------------------------------------\r\n";
         if (tokens.empty()) {
             ss << "(Sin tokens reconocidos)\r\n";
         } else {
-            ss << "#     TOKEN        LEXEMA         LINEA   COL\r\n";
-            ss << "---------------------------------------------------\r\n";
+            ss << "#      TOKEN            LEXEMA               LINEA\r\n";
+            ss << "--------------------------------------------------------\r\n";
             int i = 1;
             for (const auto& t : tokens) {
                 string num = to_string(i++) + ".";
-                num.resize(6, ' ');
+                num.resize(7, ' ');
                 ss << num;
 
                 string tipo = t.toString();
-                tipo.resize(13, ' ');
+                if (tipo.size() < 17) tipo.resize(17, ' ');
+                else tipo += " ";
                 ss << tipo;
 
                 string lex = t.lexema;
-                if (lex.size() > 14) lex = lex.substr(0, 14);
-                lex.resize(15, ' ');
+                if (lex.size() < 21) lex.resize(21, ' ');
+                else lex = lex.substr(0, 18) + "... ";
                 ss << lex;
 
-                string lin = to_string(t.linea);
-                lin.resize(8, ' ');
-                ss << lin;
-
-                ss << t.columna << "\r\n";
+                ss << t.linea << "\r\n";
             }
         }
         strTokens = ss.str();
     }
 
-    /* Pestana 1: Tabla de simbolos */
+    /* Pestana 2: Tabla de simbolos */
     string strTabla;
     {
         ostringstream ss;
         ss << "=== TABLA DE SIMBOLOS ===\r\n";
         const auto& entradas = tabla.getEntradas();
         ss << "Total: " << entradas.size() << " identificador(es)\r\n";
-        ss << "---------------------------------------------------\r\n";
+        ss << "--------------------------------------------------------\r\n";
         if (tabla.vacia()) {
             ss << "(Tabla de simbolos vacia)\r\n";
         } else {
-            ss << "POS    IDENTIFICADOR         TIPO          LINEA INI   APARICIONES\r\n";
+            ss << "POSICION   IDENTIFICADOR         LINEA INICIAL   APARICIONES\r\n";
             ss << "---------------------------------------------------------------------------\r\n";
             for (const auto& e : entradas) {
-                string idx = "#" + to_string(e.pos);
-                idx.resize(7, ' ');
-                ss << idx;
+                string posStr = to_string(e.pos);
+                posStr.resize(11, ' ');
+                ss << posStr;
 
                 string nom = e.nombre;
                 if (nom.size() < 22) nom.resize(22, ' ');
                 else nom += "  ";
                 ss << nom;
 
-                string tip = e.tipo.empty() ? "sin tipo" : e.tipo;
-                tip.resize(14, ' ');
-                ss << tip;
-
                 string lin = "Linea " + to_string(e.lineaIni);
-                lin.resize(12, ' ');
+                lin.resize(16, ' ');
                 ss << lin;
 
                 for (size_t k = 0; k < e.apariciones.size(); ++k) {
@@ -189,7 +182,7 @@ static void ejecutarAnalisis(HWND hWnd) {
         strTabla = ss.str();
     }
 
-    /* Pestana 2: Errores lexicos */
+    /* Pestana 3: Errores lexicos */
     string strErrores;
     {
         ostringstream ss;
@@ -199,10 +192,10 @@ static void ejecutarAnalisis(HWND hWnd) {
         if (errores.empty()) {
             ss << "(Sin errores lexicos detectados. Codigo valido)\r\n";
         } else {
-            ss << "LINEA      LEXEMA                        DESCRIPCION DEL ERROR\r\n";
+            ss << "LINEA      LEXEMA                        DESCRIPCION\r\n";
             ss << "-------------------------------------------------------------------------------------------\r\n";
             for (const auto& e : errores) {
-                string lin = "Línea " + to_string(e.linea);
+                string lin = "Linea " + to_string(e.linea);
                 lin.resize(11, ' ');
                 string lex = "'" + e.lexema + "'";
                 if (lex.size() < 30) lex.resize(30, ' ');
@@ -228,8 +221,8 @@ static void ejecutarAnalisis(HWND hWnd) {
     guardarArchivo(outDir + "errores.txt",          strErrores);
 
     MessageBoxA(hWnd,
-        "Analisis completado.\n\n"
-        "Resultados exportados a la carpeta output/:\n"
+        "Analisis completado exitosamente.\n\n"
+        "Resultados visualizados en pestanas y guardados en output/:\n"
         "  - tokens.txt\n"
         "  - tabla_simbolos.txt\n"
         "  - errores.txt",
@@ -285,7 +278,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             0,0,0,0, hWnd, (HMENU)IDC_BTN_ANALIZAR, NULL, NULL);
         SendMessage(hBtnAnalizar, WM_SETFONT, (WPARAM)hFont, TRUE);
 
-        hLabelFile = CreateWindowA("STATIC", "ejemplo.lp (por defecto)",
+        hLabelFile = CreateWindowA("STATIC", "ejemplo.lp (codigo cargado)",
             WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
             0,0,0,0, hWnd, (HMENU)IDC_LABEL_FILE, NULL, NULL);
         SendMessage(hLabelFile, WM_SETFONT, (WPARAM)hFont, TRUE);
@@ -338,21 +331,26 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         SendMessage(hEditErrores, WM_SETFONT, (WPARAM)hMono, TRUE);
         ShowWindow(hEditErrores, SW_HIDE);
 
-        /* Codigo cargado por defecto en el editor */
+        /* Codigo de ejemplo por defecto (ejemplo oficial del proyecto LP) */
         setEditText(hEditEntrada,
+            "void main() {\r\n"
             "int edad = 20;\r\n"
-            "float promedio = edad // 2;\r\n"
-            "edad = edad + 1;");
+            "float promedio = 15.5;\r\n"
+            "if (edad >= 18 && edad <= 60) {\r\n"
+            "println(\"Edad valida\");\r\n"
+            "}\r\n"
+            "return;\r\n"
+            "}");
 
         setEditText(hEditTokens,
             "=== SECUENCIA DE TOKENS ===\r\n"
-            "Presiona [Analizar] para generar tokens del codigo de entrada.");
+            "Presiona [Analizar] para generar los tokens del programa.");
         setEditText(hEditTabla,
             "=== TABLA DE SIMBOLOS ===\r\n"
-            "Presiona [Analizar] para visualizar la tabla de identificadores.");
+            "Presiona [Analizar] para visualizar los identificadores y sus posiciones.");
         setEditText(hEditErrores,
             "=== ERRORES LEXICOS ===\r\n"
-            "Presiona [Analizar] para revisar errores lexicos.");
+            "Presiona [Analizar] para verificar si existen errores lexicos.");
         break;
     }
 
@@ -391,6 +389,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     setEditText(hEditEntrada, contenido);
                     TabCtrl_SetCurSel(hTab, 0);
                     mostrarPestana(0);
+                } else {
+                    string msg = "No se pudo leer el archivo.\n\n" + FileConverter::ultimoError();
+                    MessageBoxA(hWnd, msg.c_str(), "Error", MB_ICONERROR);
                 }
             }
             break;
@@ -448,7 +449,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     RegisterClassExA(&wc);
 
     HWND hWnd = CreateWindowExA(0, "LexLP_Clase",
-        "Analizador Lexico LP - ID, TEXTO, Palabras Reservadas y Tabla de Simbolos",
+        "Analizador Lexico LP - Tokens, Operadores, Tabla de Simbolos y Errores",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 1000, 650,
         NULL, NULL, hInstance, NULL);

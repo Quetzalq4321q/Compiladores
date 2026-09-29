@@ -1,3 +1,5 @@
-int @edad;
+int @edad = 20;
 $variable = 10;
-#invalido 99.
+float mal = 12.3.4;
+int 99var = 5;
+println("texto sin cerrar);

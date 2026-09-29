@@ -1,45 +1,42 @@
 #include "SymbolTable.h"
-#include <algorithm>
 
 using namespace std;
 
-/* Inserta el simbolo solo si no esta repetido; si ya existe, actualiza apariciones */
-int SymbolTable::agregar(const string& nombre, const string& tipo, int linea) {
-    int pos = buscar(nombre);
-    if (pos == -1) {
-        SymbolEntry entry;
-        entry.pos = static_cast<int>(entradas.size());
-        entry.nombre = nombre;
-        entry.tipo = tipo.empty() ? "desconocido" : tipo;
-        entry.lineaIni = linea;
-        entry.apariciones.push_back(linea);
-
-        entradas.push_back(entry);
-        return entry.pos;
+/* Agrega un identificador si no existe y devuelve su posicion; si ya existe devuelve la existente */
+int SymbolTable::agregar(const string& nombre, int linea) {
+    int posExistente = buscar(nombre);
+    if (posExistente != -1) {
+        entradas[posExistente].apariciones.push_back(linea);
+        return posExistente;
     }
 
-    // Ya existe: agregar la linea si aun no esta registrada
-    auto& apars = entradas[pos].apariciones;
-    if (find(apars.begin(), apars.end(), linea) == apars.end()) {
-        apars.push_back(linea);
-    }
-    // Actualizar tipo si no estaba definido
-    if ((entradas[pos].tipo == "desconocido" || entradas[pos].tipo.empty()) && !tipo.empty()) {
-        entradas[pos].tipo = tipo;
-    }
+    int nuevaPos = static_cast<int>(entradas.size());
+    SymbolEntry entrada;
+    entrada.pos = nuevaPos;
+    entrada.nombre = nombre;
+    entrada.lineaIni = linea;
+    entrada.apariciones.push_back(linea);
 
-    return pos;
+    entradas.push_back(entrada);
+    return nuevaPos;
 }
 
-/* Busqueda secuencial del identificador */
+/* Busca el identificador por nombre; retorna posicion o -1 */
 int SymbolTable::buscar(const string& nombre) const {
-    for (int i = 0; i < static_cast<int>(entradas.size()); i++) {
-        if (entradas[i].nombre == nombre) return i;
+    for (size_t i = 0; i < entradas.size(); ++i) {
+        if (entradas[i].nombre == nombre) {
+            return static_cast<int>(i);
+        }
     }
     return -1;
 }
 
-/* Retorna vector con solo los nombres de los identificadores */
+/* Retorna las entradas completas */
+const vector<SymbolEntry>& SymbolTable::getEntradas() const {
+    return entradas;
+}
+
+/* Retorna solo los nombres de los identificadores */
 vector<string> SymbolTable::getSimbolos() const {
     vector<string> nombres;
     nombres.reserve(entradas.size());
@@ -49,17 +46,12 @@ vector<string> SymbolTable::getSimbolos() const {
     return nombres;
 }
 
-/* Retorna vector con todas las entradas completas */
-const vector<SymbolEntry>& SymbolTable::getEntradas() const {
-    return entradas;
-}
-
-/* Comprueba si la tabla esta vacia */
+/* Verifica si no hay simbolos registrados */
 bool SymbolTable::vacia() const {
     return entradas.empty();
 }
 
-/* Limpia la tabla de simbolos */
+/* Reinicia la tabla de simbolos */
 void SymbolTable::limpiar() {
     entradas.clear();
 }
