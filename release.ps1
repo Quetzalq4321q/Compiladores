@@ -174,16 +174,22 @@ $notas = @"
 
 Fecha: $fecha
 
-## Contenido de la Entrega (Semana 1)
-- Analizador lexico para el lenguaje LP en C++20.
-- Soporte para lexemas de numeros enteros (NUM_INT) y decimales (NUM_DEC).
-- Interfaz visual en Windows (WinAPI) con pestañas:
-  - Lista de Tokens reconocidos.
-  - Tabla de Simbolos (preparada para proximas entregas).
-  - Errores Lexicos con ubicacion por linea.
-- Soporte para lectura de archivos .lp, .txt, .docx y .pdf.
+## Contenido de la Entrega Completa (Lenguaje LP)
+- Analizador lexico completo para el lenguaje LP en C++20.
+- Palabras reservadas oficiales: <VOID>, <MAIN>, <INT>, <FLOAT>, <CHAR>, <BOOLEAN>, <IF>, <ELSE>, <FOR>, <WHILE>, <SCANF>, <PRINTLN>, <RETURN>.
+- Identificadores integrados con Tabla de Simbolos: <ID,pos> con posicion unica por identificador.
+- Literales numericos (<NUM_INT>, <NUM_DEC>) y cadenas de texto (<TEXTO>).
+- Operadores completos:
+  - Asignacion: <=>
+  - Aritmeticos: <+>, <->, <*>, </>, <%>
+  - Logicos: <&&>, <||>, <!>
+  - Relacionales / Comparacion: <COMP> (==, !=, <, <=, >, >=)
+- Delimitadores y simbolos especiales: <(>, <)>, <[>, <]>, <{>, <}>, <,>, <;>
+- Reconocimiento y descarte de comentarios (// y /* */).
+- Reporte detallado de errores lexicos con linea y descripcion.
+- Interfaz grafica Windows (WinAPI) con editor de entrada, secuencia de tokens, tabla de simbolos y errores.
 - Exportacion automatica de resultados a carpeta output/ (tokens.txt, tabla_simbolos.txt, errores.txt).
-- Contenedorizacion mediante Dockerfile incluido.
+- Suite de pruebas unitarias ejecutables en tests/test_lexer.exe.
 
 ## Descarga
 Descarga y descomprime el archivo **Compiladores-$tag-windows-x64.zip** para ejecutar la aplicacion.
