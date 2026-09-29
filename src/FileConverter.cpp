@@ -165,11 +165,20 @@ std::string FileConverter::extraerPdf(const std::string& ruta) {
     return resultado;
 }
 
-/* Dispatcher de lectura segun el tipo de archivo */
+#include "ErrorHandler.h"
+
+/* Dispatcher de lectura segun el tipo de archivo con contencion de errores */
 std::string FileConverter::leer(const std::string& ruta) {
     error_ = "";
-    std::string ext = getExtension(ruta);
 
+    /* Validacion previa con el modulo de contencion de errores */
+    DiagnosticoEntrada diag = ErrorHandler::validarArchivo(ruta);
+    if (!diag.esValido) {
+        error_ = diag.titulo + "\n\n" + diag.mensaje + "\n\nSugerencia: " + diag.sugerencia;
+        return "";
+    }
+
+    std::string ext = getExtension(ruta);
     if (ext == ".lp" || ext == ".txt") return leerTextoPlano(ruta);
     if (ext == ".docx")                return extraerDocx(ruta);
     if (ext == ".pdf")                 return extraerPdf(ruta);

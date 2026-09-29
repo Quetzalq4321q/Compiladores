@@ -75,6 +75,9 @@ struct Token {
 
     /* Formato de salida segun especificacion LP (ej: <INT>, <ID,0>, <=>, <COMP>, etc.) */
     string toString() const;
+
+    /* Categoria oficial segun la tabla del docente (ej. "Palabra reservada", "Numero entero", etc.) */
+    string getCategoria() const;
 };
 
 /* Retorna el nombre textual de la categoria */

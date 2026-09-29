@@ -124,6 +124,55 @@ void testErroresLexicos() {
     cout << endl;
 }
 
+#include "../src/ErrorHandler.h"
+
+void testContencionErroresYCategorias() {
+    cout << "=== Test 6: Contencion de Errores de Entrada y Categorias de Tokens ===" << endl;
+
+    /* 1. Deteccion de imagenes */
+    DiagnosticoEntrada diagImg = ErrorHandler::validarArchivo("foto.png");
+    assert(!diagImg.esValido);
+    assert(diagImg.tipo == TipoFalloEntrada::IMAGEN);
+    cout << "[PASS] Imagen detectada y rechazada con mensaje explicito: " << diagImg.titulo << endl;
+
+    /* 2. Deteccion de binarios */
+    DiagnosticoEntrada diagBin = ErrorHandler::validarArchivo("programa.exe");
+    assert(!diagBin.esValido);
+    assert(diagBin.tipo == TipoFalloEntrada::BINARIO_EJECUTABLE);
+    cout << "[PASS] Binario detectado y rechazado: " << diagBin.titulo << endl;
+
+    /* 3. Deteccion de valores muertos (texto vacio o solo espacios) */
+    DiagnosticoEntrada diagVacio = ErrorHandler::validarCodigoFuente("   \n\t  \r\n  ");
+    assert(!diagVacio.esValido);
+    assert(diagVacio.tipo == TipoFalloEntrada::TEXTO_VACIO);
+    cout << "[PASS] Valor muerto detectado y rechazado: " << diagVacio.titulo << endl;
+
+    /* 4. Verificacion de Categorias de Tokens segun tabla del profesor */
+    Token tInt(LexTokenType::KW_INT, "int", 1);
+    assert(tInt.getCategoria() == "Palabra reservada");
+
+    Token tNum(LexTokenType::NUM_INT, "42", 1);
+    assert(tNum.getCategoria() == "Numero entero");
+
+    Token tDec(LexTokenType::NUM_DEC, "3.14", 1);
+    assert(tDec.getCategoria() == "Numero decimal");
+
+    Token tComp(LexTokenType::OP_COMP, ">=", 1);
+    assert(tComp.getCategoria() == "Operador de Comparacion/Relacionales");
+
+    Token tLog(LexTokenType::OP_AND, "&&", 1);
+    assert(tLog.getCategoria() == "Operador logico");
+
+    Token tAsig(LexTokenType::OP_ASSIGN, "=", 1);
+    assert(tAsig.getCategoria() == "Operador de Asignacion");
+
+    Token tEsp(LexTokenType::SEMICOLON, ";", 1);
+    assert(tEsp.getCategoria() == "Simbolo especial");
+
+    cout << "[PASS] Categorias de la tabla oficial asignadas correctamente a cada token." << endl;
+    cout << endl;
+}
+
 int main() {
     cout << "========================================" << endl;
     cout << " EJECUTANDO PRUEBAS UNITARIAS LEXER LP  " << endl;
@@ -134,6 +183,7 @@ int main() {
     testComparacionesYLogicos();
     testIdentificadoresRepetidos();
     testErroresLexicos();
+    testContencionErroresYCategorias();
 
     cout << "========================================" << endl;
     cout << " TODAS LAS PRUEBAS PASARON EXITOSAMENTE " << endl;

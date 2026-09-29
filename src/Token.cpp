@@ -116,3 +116,59 @@ string Token::toString() const {
 
     return "<" + tokenTypeToString(tipo) + ">";
 }
+
+/* Retorna la categoria del token segun la tabla de expresiones regulares oficial */
+string Token::getCategoria() const {
+    switch (tipo) {
+        case LexTokenType::NUM_INT:
+            return "Numero entero";
+        case LexTokenType::NUM_DEC:
+            return "Numero decimal";
+        case LexTokenType::ID:
+            return "Identificador";
+        case LexTokenType::TEXTO:
+            return "Constantes de texto";
+        case LexTokenType::KW_INT:
+        case LexTokenType::KW_FLOAT:
+        case LexTokenType::KW_CHAR:
+        case LexTokenType::KW_BOOLEAN:
+        case LexTokenType::KW_VOID:
+        case LexTokenType::KW_IF:
+        case LexTokenType::KW_ELSE:
+        case LexTokenType::KW_FOR:
+        case LexTokenType::KW_WHILE:
+        case LexTokenType::KW_SCANF:
+        case LexTokenType::KW_PRINTLN:
+        case LexTokenType::KW_MAIN:
+        case LexTokenType::KW_RETURN:
+        case LexTokenType::KW_STRING:
+            return "Palabra reservada";
+        case LexTokenType::OP_ASSIGN:
+            return "Operador de Asignacion";
+        case LexTokenType::OP_SUM:
+        case LexTokenType::OP_SUB:
+        case LexTokenType::OP_MUL:
+        case LexTokenType::OP_DIV:
+        case LexTokenType::OP_MOD:
+            return "Operador aritmetico";
+        case LexTokenType::OP_AND:
+        case LexTokenType::OP_OR:
+        case LexTokenType::OP_NOT:
+            return "Operador logico";
+        case LexTokenType::OP_COMP:
+            return "Operador de Comparacion/Relacionales";
+        case LexTokenType::LPAREN:
+        case LexTokenType::RPAREN:
+        case LexTokenType::LBRACKET:
+        case LexTokenType::RBRACKET:
+        case LexTokenType::LBRACE:
+        case LexTokenType::RBRACE:
+        case LexTokenType::COMMA:
+        case LexTokenType::SEMICOLON:
+            return "Simbolo especial";
+        case LexTokenType::LEX_ERROR:
+            return "Error lexico";
+        default:
+            return "Otro";
+    }
+}

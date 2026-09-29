@@ -11,6 +11,7 @@ add_executable(Compiladores WIN32
         src/Lexer.cpp
         src/SymbolTable.cpp
         src/FileConverter.cpp
+        src/ErrorHandler.cpp
 )
 
 target_link_libraries(Compiladores comctl32 comdlg32 ole32)
@@ -21,4 +22,5 @@ add_executable(test_lexer
         src/Token.cpp
         src/Lexer.cpp
         src/SymbolTable.cpp
+        src/ErrorHandler.cpp
 )

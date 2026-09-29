@@ -11,6 +11,7 @@
 #include "Lexer.h"
 #include "Token.h"
 #include "FileConverter.h"
+#include "ErrorHandler.h"
 
 using namespace std;
 
@@ -96,8 +97,11 @@ static void ejecutarAnalisis(HWND hWnd) {
         }
     }
 
-    if (fuente.empty()) {
-        MessageBoxA(hWnd, "Escribe codigo en la pestana 'Entrada (Codigo Fuente)' o abre un archivo con [Abrir Archivo].", "Aviso", MB_ICONWARNING);
+    /* Contencion de errores: Validar entrada para evitar valores muertos o entradas vacias */
+    DiagnosticoEntrada diag = ErrorHandler::validarCodigoFuente(fuente);
+    if (!diag.esValido) {
+        string msg = diag.mensaje + "\n\nSugerencia: " + diag.sugerencia;
+        MessageBoxA(hWnd, msg.c_str(), diag.titulo.c_str(), MB_ICONWARNING);
         return;
     }
 
@@ -109,103 +113,10 @@ static void ejecutarAnalisis(HWND hWnd) {
     const SymbolTable&   tabla   = lexer.getTabla();
     const vector<Token>& errores = lexer.getErrores();
 
-    /* Pestana 1: Lista y secuencia de tokens */
-    string strTokens;
-    {
-        ostringstream ss;
-        ss << "=== SECUENCIA DE TOKENS (FORMATO LP) ===\r\n";
-        ss << lexer.getSalidaPorLineas() << "\r\n\r\n";
-        ss << "=== LISTA SECUENCIAL DETALLADA DE TOKENS ===\r\n";
-        ss << "Total: " << tokens.size() << " token(s)\r\n";
-        ss << "--------------------------------------------------------\r\n";
-        if (tokens.empty()) {
-            ss << "(Sin tokens reconocidos)\r\n";
-        } else {
-            ss << "#      TOKEN            LEXEMA               LINEA\r\n";
-            ss << "--------------------------------------------------------\r\n";
-            int i = 1;
-            for (const auto& t : tokens) {
-                string num = to_string(i++) + ".";
-                num.resize(7, ' ');
-                ss << num;
-
-                string tipo = t.toString();
-                if (tipo.size() < 17) tipo.resize(17, ' ');
-                else tipo += " ";
-                ss << tipo;
-
-                string lex = t.lexema;
-                if (lex.size() < 21) lex.resize(21, ' ');
-                else lex = lex.substr(0, 18) + "... ";
-                ss << lex;
-
-                ss << t.linea << "\r\n";
-            }
-        }
-        strTokens = ss.str();
-    }
-
-    /* Pestana 2: Tabla de simbolos */
-    string strTabla;
-    {
-        ostringstream ss;
-        ss << "=== TABLA DE SIMBOLOS ===\r\n";
-        const auto& entradas = tabla.getEntradas();
-        ss << "Total: " << entradas.size() << " identificador(es)\r\n";
-        ss << "--------------------------------------------------------\r\n";
-        if (tabla.vacia()) {
-            ss << "(Tabla de simbolos vacia)\r\n";
-        } else {
-            ss << "POSICION   IDENTIFICADOR         LINEA INICIAL   APARICIONES\r\n";
-            ss << "---------------------------------------------------------------------------\r\n";
-            for (const auto& e : entradas) {
-                string posStr = to_string(e.pos);
-                posStr.resize(11, ' ');
-                ss << posStr;
-
-                string nom = e.nombre;
-                if (nom.size() < 22) nom.resize(22, ' ');
-                else nom += "  ";
-                ss << nom;
-
-                string lin = "Linea " + to_string(e.lineaIni);
-                lin.resize(16, ' ');
-                ss << lin;
-
-                for (size_t k = 0; k < e.apariciones.size(); ++k) {
-                    if (k > 0) ss << ", ";
-                    ss << "L" << e.apariciones[k];
-                }
-                ss << "\r\n";
-            }
-        }
-        strTabla = ss.str();
-    }
-
-    /* Pestana 3: Errores lexicos */
-    string strErrores;
-    {
-        ostringstream ss;
-        ss << "=== ERRORES LEXICOS ===\r\n";
-        ss << "Total: " << errores.size() << " error(es)\r\n";
-        ss << "-------------------------------------------------------------------------------------------\r\n";
-        if (errores.empty()) {
-            ss << "(Sin errores lexicos detectados. Codigo valido)\r\n";
-        } else {
-            ss << "LINEA      LEXEMA                        DESCRIPCION\r\n";
-            ss << "-------------------------------------------------------------------------------------------\r\n";
-            for (const auto& e : errores) {
-                string lin = "Linea " + to_string(e.linea);
-                lin.resize(11, ' ');
-                string lex = "'" + e.lexema + "'";
-                if (lex.size() < 30) lex.resize(30, ' ');
-                else lex += "  ";
-                string msg = e.mensaje.empty() ? "ERROR_LEXICO" : e.mensaje;
-                ss << lin << lex << msg << "\r\n";
-            }
-        }
-        strErrores = ss.str();
-    }
+    /* Generar reportes unificados a traves del modulo ErrorHandler */
+    string strTokens  = ErrorHandler::generarReporteTokens(tokens, lexer.getSalidaPorLineas());
+    string strTabla   = ErrorHandler::generarReporteTablaSimbolos(tabla);
+    string strErrores = ErrorHandler::generarReporteErrores(errores);
 
     /* Actualiza la interfaz */
     setEditText(hEditTokens,  strTokens);
@@ -220,13 +131,19 @@ static void ejecutarAnalisis(HWND hWnd) {
     guardarArchivo(outDir + "tabla_simbolos.txt",   strTabla);
     guardarArchivo(outDir + "errores.txt",          strErrores);
 
-    MessageBoxA(hWnd,
-        "Analisis completado exitosamente.\n\n"
-        "Resultados visualizados en pestanas y guardados en output/:\n"
-        "  - tokens.txt\n"
-        "  - tabla_simbolos.txt\n"
-        "  - errores.txt",
-        "Listo", MB_ICONINFORMATION);
+    if (errores.empty()) {
+        MessageBoxA(hWnd,
+            "Analisis completado exitosamente.\n\n"
+            "El codigo es 100% valido. Resultados guardados en output/:\n"
+            "  - tokens.txt\n"
+            "  - tabla_simbolos.txt\n"
+            "  - errores.txt",
+            "Analisis Exitoso", MB_ICONINFORMATION);
+    } else {
+        string aviso = "Analisis completado con " + to_string(errores.size()) + " error(es) lexico(s).\n\n"
+                       "Revise la pestana 'Errores Lexicos' para ver los detalles.";
+        MessageBoxA(hWnd, aviso.c_str(), "Atencion: Errores Detectados", MB_ICONWARNING);
+    }
 }
 
 /* Ajusta los controles al redimensionar la ventana */
@@ -378,6 +295,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             ofn.Flags        = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
             if (GetOpenFileNameA(&ofn)) {
+                /* Contencion de errores: Validar archivo antes de intentar cargarlo */
+                DiagnosticoEntrada diag = ErrorHandler::validarArchivo(szFile);
+                if (!diag.esValido) {
+                    string msg = diag.mensaje + "\n\nSugerencia: " + diag.sugerencia;
+                    MessageBoxA(hWnd, msg.c_str(), diag.titulo.c_str(), MB_ICONERROR);
+                    break;
+                }
+
                 rutaArchivo = szFile;
                 string nombre = rutaArchivo;
                 size_t sep = nombre.find_last_of("\\/");
@@ -391,7 +316,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                     mostrarPestana(0);
                 } else {
                     string msg = "No se pudo leer el archivo.\n\n" + FileConverter::ultimoError();
-                    MessageBoxA(hWnd, msg.c_str(), "Error", MB_ICONERROR);
+                    MessageBoxA(hWnd, msg.c_str(), "Error al Procesar Archivo", MB_ICONERROR);
                 }
             }
             break;
