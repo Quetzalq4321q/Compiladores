@@ -1,15 +1,17 @@
 === SECUENCIA DE TOKENS (FORMATO LP) ===
 <VOID> <MAIN> <(> <)> <{>
-<INT> <ID,0> <=> <NUM_INT> <;>
-<FLOAT> <ID,1> <=> <NUM_DEC> <;>
+<INT> <ID,0> <;>
+<FLOAT> <ID,1> <;>
+<ID,0> <=> <NUM_INT> <;>
+<ID,1> <=> <NUM_DEC> <;>
 <IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)> <{>
 <PRINTLN> <(> <TEXTO> <)> <;>
 <}>
-<RETURN> <;>
+<RETURN> <NUM_INT> <;>
 <}>
 
 === TABLA DETALLADA DE TOKENS (ESPECIFICACION LP) ===
-Total: 35 token(s) reconocidos
+Total: 40 token(s) reconocidos
 ------------------------------------------------------------------------------------------------------
 #      TOKEN            LEXEMA               CATEGORIA DEL TOKEN                    LINEA
 ------------------------------------------------------------------------------------------------------
@@ -20,31 +22,36 @@ Total: 35 token(s) reconocidos
 5.     <{>              {                    Simbolo especial                       1
 6.     <INT>            int                  Palabra reservada                      2
 7.     <ID,0>           edad                 Identificador                          2
-8.     <=>              =                    Operador de Asignacion                 2
-9.     <NUM_INT>        20                   Numero entero                          2
-10.    <;>              ;                    Simbolo especial                       2
-11.    <FLOAT>          float                Palabra reservada                      3
-12.    <ID,1>           promedio             Identificador                          3
-13.    <=>              =                    Operador de Asignacion                 3
-14.    <NUM_DEC>        15.5                 Numero decimal                         3
-15.    <;>              ;                    Simbolo especial                       3
-16.    <IF>             if                   Palabra reservada                      4
-17.    <(>              (                    Simbolo especial                       4
-18.    <ID,0>           edad                 Identificador                          4
-19.    <COMP>           >=                   Operador de Comparacion/Relacionales   4
-20.    <NUM_INT>        18                   Numero entero                          4
-21.    <&&>             &&                   Operador logico                        4
-22.    <ID,0>           edad                 Identificador                          4
-23.    <COMP>           <=                   Operador de Comparacion/Relacionales   4
-24.    <NUM_INT>        60                   Numero entero                          4
-25.    <)>              )                    Simbolo especial                       4
-26.    <{>              {                    Simbolo especial                       4
-27.    <PRINTLN>        println              Palabra reservada                      5
-28.    <(>              (                    Simbolo especial                       5
-29.    <TEXTO>          "Edad valida"        Constantes de texto                    5
-30.    <)>              )                    Simbolo especial                       5
-31.    <;>              ;                    Simbolo especial                       5
-32.    <}>              }                    Simbolo especial                       6
-33.    <RETURN>         return               Palabra reservada                      7
-34.    <;>              ;                    Simbolo especial                       7
-35.    <}>              }                    Simbolo especial                       8
+8.     <;>              ;                    Simbolo especial                       2
+9.     <FLOAT>          float                Palabra reservada                      3
+10.    <ID,1>           promedio             Identificador                          3
+11.    <;>              ;                    Simbolo especial                       3
+12.    <ID,0>           edad                 Identificador                          4
+13.    <=>              =                    Operador de Asignacion                 4
+14.    <NUM_INT>        20                   Numero entero                          4
+15.    <;>              ;                    Simbolo especial                       4
+16.    <ID,1>           promedio             Identificador                          5
+17.    <=>              =                    Operador de Asignacion                 5
+18.    <NUM_DEC>        15.5                 Numero decimal                         5
+19.    <;>              ;                    Simbolo especial                       5
+20.    <IF>             if                   Palabra reservada                      6
+21.    <(>              (                    Simbolo especial                       6
+22.    <ID,0>           edad                 Identificador                          6
+23.    <COMP>           >=                   Operador de Comparacion/Relacionales   6
+24.    <NUM_INT>        18                   Numero entero                          6
+25.    <&&>             &&                   Operador logico                        6
+26.    <ID,0>           edad                 Identificador                          6
+27.    <COMP>           <=                   Operador de Comparacion/Relacionales   6
+28.    <NUM_INT>        60                   Numero entero                          6
+29.    <)>              )                    Simbolo especial                       6
+30.    <{>              {                    Simbolo especial                       6
+31.    <PRINTLN>        println              Palabra reservada                      7
+32.    <(>              (                    Simbolo especial                       7
+33.    <TEXTO>          "Edad valida"        Constantes de texto                    7
+34.    <)>              )                    Simbolo especial                       7
+35.    <;>              ;                    Simbolo especial                       7
+36.    <}>              }                    Simbolo especial                       8
+37.    <RETURN>         return               Palabra reservada                      9
+38.    <NUM_INT>        0                    Numero entero                          9
+39.    <;>              ;                    Simbolo especial                       9
+40.    <}>              }                    Simbolo especial                       10

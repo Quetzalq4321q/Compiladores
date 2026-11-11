@@ -12,6 +12,8 @@
 #include "Token.h"
 #include "FileConverter.h"
 #include "ErrorHandler.h"
+#include "AST.h"
+#include "Parser.h"
 
 using namespace std;
 
@@ -20,20 +22,24 @@ using namespace std;
 #define IDC_BTN_ABRIR    101
 #define IDC_BTN_ANALIZAR 102
 #define IDC_LABEL_FILE   103
+#define IDC_LABEL_STATUS 104
 #define IDC_EDIT_ENTRADA 109
 #define IDC_EDIT_TOKENS  110
 #define IDC_EDIT_TABLA   111
 #define IDC_EDIT_ERRORES 112
+#define IDC_EDIT_AST     113
 
 /* Handles de controles de la ventana */
 HWND hTab;
 HWND hEditEntrada;
 HWND hEditTokens;
 HWND hEditTabla;
+HWND hEditAST;
 HWND hEditErrores;
 HWND hBtnAbrir;
 HWND hBtnAnalizar;
 HWND hLabelFile;
+HWND hLabelStatus;
 
 string rutaArchivo;
 string dirProyecto;
@@ -64,12 +70,14 @@ static void mostrarPestana(int idx) {
     ShowWindow(hEditEntrada, SW_HIDE);
     ShowWindow(hEditTokens,  SW_HIDE);
     ShowWindow(hEditTabla,   SW_HIDE);
+    ShowWindow(hEditAST,     SW_HIDE);
     ShowWindow(hEditErrores, SW_HIDE);
     switch (idx) {
         case 0: ShowWindow(hEditEntrada, SW_SHOW); break;
         case 1: ShowWindow(hEditTokens,  SW_SHOW); break;
         case 2: ShowWindow(hEditTabla,   SW_SHOW); break;
-        case 3: ShowWindow(hEditErrores, SW_SHOW); break;
+        case 3: ShowWindow(hEditAST,     SW_SHOW); break;
+        case 4: ShowWindow(hEditErrores, SW_SHOW); break;
     }
 }
 
@@ -82,7 +90,7 @@ static void guardarArchivo(const string& ruta, const string& contenido) {
     if (f) f << contenido;
 }
 
-/* Ejecuta el analisis lexico del texto en el editor o archivo actual y actualiza la UI */
+/* Ejecuta el analisis lexico y sintactico del texto en el editor o archivo actual y actualiza la UI */
 static void ejecutarAnalisis(HWND hWnd) {
     string fuente;
     int len = GetWindowTextLengthA(hEditEntrada);
@@ -105,55 +113,72 @@ static void ejecutarAnalisis(HWND hWnd) {
         return;
     }
 
-    /* Analisis lexico completo */
+    /* 1. Analisis lexico completo */
     Lexer lexer(fuente);
     lexer.analizar();
 
     const vector<Token>& tokens  = lexer.getTokens();
     const SymbolTable&   tabla   = lexer.getTabla();
-    const vector<Token>& errores = lexer.getErrores();
+    const vector<Token>& errLexicos = lexer.getErrores();
 
-    /* Generar reportes unificados a traves del modulo ErrorHandler */
-    string strTokens  = ErrorHandler::generarReporteTokens(tokens, lexer.getSalidaPorLineas());
-    string strTabla   = ErrorHandler::generarReporteTablaSimbolos(tabla);
-    string strErrores = ErrorHandler::generarReporteErrores(errores);
+    /* 2. Analisis sintactico (Parser por Descenso Recursivo) y construccion del AST */
+    Parser parser(tokens);
+    auto ast = parser.parsear();
+    bool sintaxisValida = parser.esAceptado();
+    const auto& errSintacticos = parser.getErrores();
 
-    /* Actualiza la interfaz */
+    /* 3. Generar reportes unificados a traves del modulo ErrorHandler */
+    string strTokens     = ErrorHandler::generarReporteTokens(tokens, lexer.getSalidaPorLineas());
+    string strTabla      = ErrorHandler::generarReporteTablaSimbolos(tabla);
+    string strAST        = ast ? ast->toTreeString() : "(AST no generado debido a errores sintacticos criticos)\r\n";
+    string strDiagnostico = ErrorHandler::generarReporteDiagnosticoCompleto(errLexicos, sintaxisValida, errSintacticos);
+
+    /* 4. Actualizar la interfaz con los resultados */
     setEditText(hEditTokens,  strTokens);
     setEditText(hEditTabla,   strTabla);
-    setEditText(hEditErrores, strErrores);
-    TabCtrl_SetCurSel(hTab, 1);
-    mostrarPestana(1);
+    setEditText(hEditAST,     strAST);
+    setEditText(hEditErrores, strDiagnostico);
 
-    /* Exporta resultados a la carpeta output/ */
+    bool programaAceptado = errLexicos.empty() && sintaxisValida;
+
+    /* Actualizar banner de estado */
+    if (programaAceptado) {
+        SetWindowTextA(hLabelStatus, "[✓] PROGRAMA ACEPTADO: 0 errores lexicos / 0 errores sintacticos");
+        TabCtrl_SetCurSel(hTab, 3); /* Mostrar AST */
+        mostrarPestana(3);
+    } else {
+        string st = "[✗] PROGRAMA RECHAZADO (" + to_string(errLexicos.size()) + " err. lexicos, " +
+                    to_string(errSintacticos.size()) + " err. sintacticos)";
+        SetWindowTextA(hLabelStatus, st.c_str());
+        TabCtrl_SetCurSel(hTab, 4); /* Mostrar Diagnostico */
+        mostrarPestana(4);
+    }
+
+    /* 5. Exportar resultados a la carpeta output/ */
     string outDir = dirProyecto + "..\\output\\";
-    guardarArchivo(outDir + "tokens.txt",          strTokens);
-    guardarArchivo(outDir + "tabla_simbolos.txt",   strTabla);
-    guardarArchivo(outDir + "errores.txt",          strErrores);
+    guardarArchivo(outDir + "tokens.txt",        strTokens);
+    guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
+    guardarArchivo(outDir + "ast.txt",            strAST);
+    guardarArchivo(outDir + "errores.txt",        strDiagnostico);
 
-    if (errores.empty()) {
+    if (programaAceptado) {
         MessageBoxA(hWnd,
-            "Analisis completado exitosamente.\n\n"
-            "El codigo es 100% valido. Resultados guardados en output/:\n"
+            "[✓] PROGRAMA ACEPTADO\n\n"
+            "El programa fuente es 100% valido segun la gramatica formal LP.\n"
+            "El arbol sintactico (AST) se genero correctamente.\n\n"
+            "Archivos exportados en output/:\n"
             "  - tokens.txt\n"
             "  - tabla_simbolos.txt\n"
+            "  - ast.txt\n"
             "  - errores.txt",
-            "Analisis Exitoso", MB_ICONINFORMATION);
+            "Compilador LP - Analisis Exitoso", MB_ICONINFORMATION);
     } else {
-        int cantAlertas = 0;
-        for (const auto& e : errores) {
-            if (e.mensaje.find("carece de sentido") != string::npos) cantAlertas++;
-        }
-        string aviso;
-        if (cantAlertas > 0 && cantAlertas == static_cast<int>(errores.size())) {
-            aviso = "Analisis completado con " + to_string(cantAlertas) + " alerta(s) de escritura.\n\n"
-                    "El compilador leyo los tokens pero detecto secuencias que carecen de sentido lexico/logico (ej. ';;;;;;;;;;;;;;;;;;;;').\n\n"
-                    "Revise la pestana 'Errores Lexicos' para ver el detalle de cada alerta.";
-        } else {
-            aviso = "Analisis completado con " + to_string(errores.size()) + " incidencia(s) (errores y/o anomalias de sentido lexico).\n\n"
-                    "Revise la pestana 'Errores Lexicos' para ver los detalles.";
-        }
-        MessageBoxA(hWnd, aviso.c_str(), "Atencion: Incidencias Detectadas", MB_ICONWARNING);
+        string aviso = "[✗] PROGRAMA RECHAZADO\n\n"
+                       "Fallas detectadas:\n"
+                       "  - Errores Lexicos: " + to_string(errLexicos.size()) + "\n"
+                       "  - Errores Sintacticos: " + to_string(errSintacticos.size()) + "\n\n"
+                       "Revise la pestana 'Diagnostico y Errores' para ver la linea exacta y sugerencia de correccion.";
+        MessageBoxA(hWnd, aviso.c_str(), "Compilador LP - Errores Detectados", MB_ICONWARNING);
     }
 }
 
@@ -168,7 +193,8 @@ static void redimensionarPaneles(HWND hWnd) {
 
     SetWindowPos(hBtnAbrir,    NULL, m,        10, 130, 32, SWP_NOZORDER);
     SetWindowPos(hBtnAnalizar, NULL, m + 140,  10, 120, 32, SWP_NOZORDER);
-    SetWindowPos(hLabelFile,   NULL, m + 270,  17, ancho - (m + 280), 22, SWP_NOZORDER);
+    SetWindowPos(hLabelFile,   NULL, m + 270,  17, 240, 22, SWP_NOZORDER);
+    SetWindowPos(hLabelStatus, NULL, m + 520,  17, ancho - (m + 530), 22, SWP_NOZORDER);
 
     int tabX = m, tabY = barra, tabW = ancho - m * 2, tabH = alto - barra - m;
     SetWindowPos(hTab, NULL, tabX, tabY, tabW, tabH, SWP_NOZORDER);
@@ -183,6 +209,7 @@ static void redimensionarPaneles(HWND hWnd) {
     SetWindowPos(hEditEntrada, NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditTokens,  NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditTabla,   NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
+    SetWindowPos(hEditAST,     NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditErrores, NULL, tabX + eX, tabY + eY, eW, eH, SWP_NOZORDER);
 }
 
@@ -211,6 +238,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             0,0,0,0, hWnd, (HMENU)IDC_LABEL_FILE, NULL, NULL);
         SendMessage(hLabelFile, WM_SETFONT, (WPARAM)hFont, TRUE);
 
+        hLabelStatus = CreateWindowA("STATIC", "[ESTADO]: Listo para compilar",
+            WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
+            0,0,0,0, hWnd, (HMENU)IDC_LABEL_STATUS, NULL, NULL);
+        SendMessage(hLabelStatus, WM_SETFONT, (WPARAM)hFont, TRUE);
+
         hTab = CreateWindowA(WC_TABCONTROLA, "",
             WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
             0,0,0,0, hWnd, (HMENU)IDC_TAB, NULL, NULL);
@@ -224,8 +256,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         TabCtrl_InsertItem(hTab, 1, &ti);
         ti.pszText = const_cast<char*>("Tabla de Simbolos");
         TabCtrl_InsertItem(hTab, 2, &ti);
-        ti.pszText = const_cast<char*>("Errores Lexicos");
+        ti.pszText = const_cast<char*>("Arbol Sintactico (AST)");
         TabCtrl_InsertItem(hTab, 3, &ti);
+        ti.pszText = const_cast<char*>("Diagnostico y Errores");
+        TabCtrl_InsertItem(hTab, 4, &ti);
 
         DWORD estiloInput = WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL |
                             ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_WANTRETURN;
@@ -254,6 +288,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         SendMessage(hEditTabla, WM_SETFONT, (WPARAM)hMono, TRUE);
         ShowWindow(hEditTabla, SW_HIDE);
 
+        hEditAST = CreateWindowA("EDIT", "",
+            estiloEdit, 0,0,0,0, hWnd, (HMENU)IDC_EDIT_AST, NULL, NULL);
+        SendMessage(hEditAST, WM_SETFONT, (WPARAM)hMono, TRUE);
+        ShowWindow(hEditAST, SW_HIDE);
+
         hEditErrores = CreateWindowA("EDIT", "",
             estiloEdit, 0,0,0,0, hWnd, (HMENU)IDC_EDIT_ERRORES, NULL, NULL);
         SendMessage(hEditErrores, WM_SETFONT, (WPARAM)hMono, TRUE);
@@ -262,12 +301,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         /* Codigo de ejemplo por defecto (ejemplo oficial del proyecto LP) */
         setEditText(hEditEntrada,
             "void main() {\r\n"
-            "int edad = 20;\r\n"
-            "float promedio = 15.5;\r\n"
+            "int edad;\r\n"
+            "float promedio;\r\n"
+            "edad = 20;\r\n"
+            "promedio = 15.5;\r\n"
             "if (edad >= 18 && edad <= 60) {\r\n"
             "println(\"Edad valida\");\r\n"
             "}\r\n"
-            "return;\r\n"
+            "return 0;\r\n"
             "}");
 
         setEditText(hEditTokens,
@@ -276,9 +317,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         setEditText(hEditTabla,
             "=== TABLA DE SIMBOLOS ===\r\n"
             "Presiona [Analizar] para visualizar los identificadores y sus posiciones.");
+        setEditText(hEditAST,
+            "=== ARBOL SINTACTICO ABSTRACTO (AST) ===\r\n"
+            "Presiona [Analizar] para generar y visualizar el arbol sintactico.");
         setEditText(hEditErrores,
-            "=== ERRORES LEXICOS ===\r\n"
-            "Presiona [Analizar] para verificar si existen errores lexicos.");
+            "=== DIAGNOSTICO INTEGRAL (LEXICO Y SINTACTICO) ===\r\n"
+            "Presiona [Analizar] para verificar el diagnostico completo.");
         break;
     }
 
@@ -394,9 +438,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     RegisterClassExA(&wc);
 
     HWND hWnd = CreateWindowExA(0, "LexLP_Clase",
-        "Analizador Lexico LP - Tokens, Operadores, Tabla de Simbolos y Errores",
+        "Compilador LP - Analizador Lexico, Sintactico (Parser Descendente Recursivo) y AST",
         WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, 1000, 650,
+        CW_USEDEFAULT, CW_USEDEFAULT, 1050, 680,
         NULL, NULL, hInstance, NULL);
 
     SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hAppIcon);

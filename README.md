@@ -1,12 +1,12 @@
-# Compiladores - Analizador Léxico para Lenguaje LP
+# Compiladores - Analizador Léxico y Sintáctico (Parser) para Lenguaje LP
 
 <p align="center">
   <img src="res/compiler.png" width="128" height="128" alt="Icono Compilador LP" />
   <br>
-  <strong>Compilador y Analizador Léxico para el Lenguaje LP (C++20)</strong>
+  <strong>Compilador, Analizador Léxico, Parser por Descenso Recursivo y Árbol AST para Lenguaje LP (C++20)</strong>
 </p>
 
-Analizador léxico desarrollado en C++20 para el lenguaje simplificado **LP (Lenguaje de Programación)**, con interfaz gráfica nativa en Windows (WinAPI), versión CLI multiplataforma (Linux/Docker/Windows), tabla de símbolos integrada, soporte multiformato (.lp, .txt, .docx, .pdf), módulo unificado de contención de errores y suite de pruebas unitarias automatizada.
+Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Programación)**, correspondiente al **Entregable 1 (30%) de la fase de Análisis Sintáctico**. Incluye analizador sintáctico por descenso recursivo puro, construcción del Árbol de Sintaxis Abstracta (AST), diferenciación formal entre programas aceptados y rechazados, recuperación de errores sintácticos en modo pánico, interfaz gráfica nativa en Windows (WinAPI) con 5 pestañas interactivas, versión CLI multiplataforma (Linux/Docker/Windows), tabla de símbolos integrada, soporte multiformato (.lp, .txt, .docx, .pdf) y suites de pruebas automatizadas.
 
 ---
 
@@ -14,12 +14,42 @@ Analizador léxico desarrollado en C++20 para el lenguaje simplificado **LP (Len
 
 Para consultar los detalles técnicos, guías y registros de evolución del proyecto, consulta los siguientes documentos:
 
-*  **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones, nuevas características, correcciones y notas de lanzamiento bajo el estándar *Keep a Changelog* y *SemVer*.
-*  **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases, estructuras, enumeraciones, métodos, algoritmos y firmas de funciones en el código fuente.
-*  **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico, diseño de autómatas finitos deterministas (AFD) con diagramas Mermaid, pipeline de datos y estrategia de contención de errores en 3 niveles.
-*  **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para ejecutar la aplicación, operar la interfaz gráfica de 4 pestañas, cargar archivos y consultar los reportes exportados en `output/`.
+* 📄 **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones (incluyendo versión 2.0.0 - Entregable 1), nuevas características, correcciones y notas de lanzamiento.
+* 🔧 **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases (`Parser`, `ASTNode`, `Lexer`, `ErrorHandler`, `SymbolTable`, `FileConverter`), métodos y algoritmos.
+* 🏛️ **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico en 4 capas, diagramas Mermaid, árbol sintáctico y estrategia de contención de errores en 4 niveles.
+* 📖 **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para operar la interfaz gráfica de 5 pestañas, la versión CLI, Docker y consultar los reportes en `output/`.
+
 
 ---
+
+## 1. Especificación del Entregable 1 (Analizador Sintáctico)
+
+### 1.1 Gramática Libre de Contexto de LP
+El analizador sintáctico implementa directamente la gramática no ambigua mediante descenso recursivo:
+* `PROGRAMA -> LISTA_FUNCIONES PRINCIPAL`
+* `LISTA_FUNCIONES -> DECLARACION_FUNCION LISTA_FUNCIONES | ε`
+* `DECLARACION_FUNCION -> [func] TIPO_RETORNO id ( PARAMETROS ) BLOQUE`
+* `TIPO_RETORNO -> TIPO | void`
+* `TIPO -> TIPO_BASE DIMENSION`
+* `TIPO_BASE -> int | float | char | boolean | string`
+* `DIMENSION -> [ num_int ] DIMENSION | ε`
+* `PARAMETROS -> TIPO id LISTA_PARAMETROS | ε`
+* `PRINCIPAL -> [TIPO_RETORNO] main ( ) BLOQUE`
+* `BLOQUE -> { LISTA_VARIABLES COMANDOS }`
+* `LISTA_VARIABLES -> TIPO id DIMENSION LISTA_ID ; LISTA_VARIABLES | ε`
+* `COMANDOS -> COMANDO COMANDOS | ε`
+* `COMANDO -> ASIGNACION | RETORNO | LECTURA | ESCRITURA | SELECCION | MIENTRAS | FUNCION`
+* `ASIGNACION -> id [DIMENSION] = COMPLEMENTO ;`
+* `COMPLEMENTO -> EXPRESION | FUNCION`
+* `FUNCION -> func id ( ARGUMENTOS )`
+* Jerarquía de expresiones: `EXPRESION -> EXPRESION_O -> EXPRESION_Y -> EXPRESION_NO -> EXPRESION_COMP -> EXPRESION_ADITIVA -> EXPRESION_MULT -> TERMINO_EXPR`.
+* `RETORNO -> return EXPRESION ;`
+
+### 1.2 Programas de Prueba del Entregable 1
+* **Programa Mínimo Válido (Sección 4.2)**: [`tests/entregable1_valido.lp`](tests/entregable1_valido.lp) &rarr; **Aceptado (0 errores)**.
+* **Programa Mínimo Inválido (Sección 4.3 - Falta `;`)**: [`tests/entregable1_invalido1.lp`](tests/entregable1_invalido1.lp) &rarr; **Rechazado (detecta falta de punto y coma)**.
+* **Programa Inválido por Bloque Abierto**: [`tests/entregable1_invalido2.lp`](tests/entregable1_invalido2.lp) &rarr; **Rechazado**.
+* **Programa con Funciones y `func`**: [`tests/entregable1_funciones.lp`](tests/entregable1_funciones.lp) &rarr; **Aceptado con AST completo**.
 
 ## 1. Especificación Léxica de LP
 
@@ -94,22 +124,27 @@ return;
 
 ## 3. Compilación y Ejecución
 
-### 3.1 Aplicación Visual (GUI Windows)
+### 3.1 Aplicación Visual (GUI Windows con 5 Pestañas y AST)
 ```powershell
 cmake --build cmake-build-debug --target Compiladores
 .\cmake-build-debug\Compiladores.exe
 ```
 
-### 3.2 Aplicación por Consola (CLI Multiplataforma)
+### 3.2 Aplicación por Consola (CLI Multiplataforma con AST y Diagnóstico)
 ```powershell
 cmake --build cmake-build-debug --target compilador_lp
 .\cmake-build-debug\compilador_lp.exe input/ejemplo.lp
 ```
 
-### 3.3 Ejecutar Pruebas Automatizadas:
+### 3.3 Ejecutar Pruebas Automatizadas
 ```powershell
+# Pruebas del Analizador Léxico (7 tests)
 cmake --build cmake-build-debug --target test_lexer
 .\cmake-build-debug\test_lexer.exe
+
+# Pruebas del Analizador Sintáctico y AST - Entregable 1 (7 tests)
+cmake --build cmake-build-debug --target test_parser
+.\cmake-build-debug\test_parser.exe
 ```
 
 ---

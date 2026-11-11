@@ -19,3 +19,11 @@ services:
     image: compiladores-lp:test
     container_name: compilador_lp_tests
     entrypoint: ["/app/test_lexer"]
+
+  test-parser:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: compiladores-lp:test-parser
+    container_name: compilador_lp_tests_parser
+    entrypoint: ["/app/test_parser"]

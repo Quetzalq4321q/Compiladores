@@ -3,5 +3,5 @@ Total: 2 identificador(es) unico(s)
 -------------------------------------------------------------------------------------------
 POSICION   IDENTIFICADOR         LINEA INICIAL   APARICIONES
 -------------------------------------------------------------------------------------------
-0          edad                  Linea 2         L2, L4, L4
-1          promedio              Linea 3         L3
+0          edad                  Linea 2         L2, L4, L6, L6
+1          promedio              Linea 3         L3, L5

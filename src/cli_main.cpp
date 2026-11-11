@@ -9,6 +9,8 @@
 #include "SymbolTable.h"
 #include "ErrorHandler.h"
 #include "FileConverter.h"
+#include "AST.h"
+#include "Parser.h"
 
 using namespace std;
 
@@ -27,7 +29,7 @@ void mostrarBanner() {
                           |_|       [ Lenguaje de Programacion - C++20 ]         
     ===================================================================
     )" << "\033[0m" << endl;
-    cout << "\033[1;32m    [< / >] Analizador Lexico, Tabla de Simbolos y Contencion de Errores\033[0m" << endl;
+    cout << "\033[1;32m    [< / >] Analizador Lexico, Sintactico (Descenso Recursivo) y Arbol AST\033[0m" << endl;
     cout << "    -------------------------------------------------------------------\n" << endl;
 }
 
@@ -66,24 +68,31 @@ int main(int argc, char* argv[]) {
     }
 
     if (modoPruebas) {
-        cout << "\033[1;33m[*] Ejecutando suite de pruebas unitarias...\033[0m\n" << endl;
+        cout << "\033[1;33m[*] Ejecutando suite de pruebas unitarias integradas...\033[0m\n" << endl;
         string codigoPrueba =
             "void main() {\n"
-            "int edad = 20;\n"
-            "float promedio = 15.5;\n"
-            "if (edad >= 18 && edad <= 60)\n"
-            "{ println(\"Edad valida\"); }\n"
-            "return; }";
+            "int edad;\n"
+            "float promedio;\n"
+            "edad = 20;\n"
+            "promedio = 15.5;\n"
+            "}";
 
         Lexer lex(codigoPrueba);
         lex.analizar();
 
         cout << lex.getSalidaPorLineas() << endl;
-        if (lex.getErrores().empty()) {
-            cout << "\033[1;32m[PASS] Prueba basica completada exitosamente sin errores.\033[0m" << endl;
+
+        Parser parser(lex.getTokens());
+        auto ast = parser.parsear();
+
+        if (lex.getErrores().empty() && parser.esAceptado()) {
+            cout << "\n\033[1;32m[PASS] Programa valido aceptado exitosamente por el Parser.\033[0m" << endl;
+            if (ast) {
+                cout << "\n" << ast->toTreeString() << endl;
+            }
             return 0;
         } else {
-            cerr << "\033[1;31m[FAIL] Se detectaron errores inesperados.\033[0m" << endl;
+            cerr << "\033[1;31m[FAIL] Se detectaron errores inesperados en el programa de prueba.\033[0m" << endl;
             return 1;
         }
     }
@@ -136,7 +145,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    cout << "\033[1;32m[OK] Entrada validada. Iniciando analisis lexico...\033[0m\n" << endl;
+    cout << "\033[1;32m[OK] Entrada validada. Iniciando analisis lexico y sintactico...\033[0m\n" << endl;
 
     Lexer lexer(fuente);
     lexer.analizar();
@@ -153,29 +162,40 @@ int main(int argc, char* argv[]) {
     cout << "\033[1;36m" << strTokens << "\033[0m" << endl;
     cout << "\033[1;33m" << strTabla << "\033[0m" << endl;
 
-    if (errores.empty()) {
-        cout << "\033[1;32m" << strErrores << "\033[0m" << endl;
+    /* Ejecutar Analisis Sintactico por Descenso Recursivo */
+    cout << "\033[1;35m[*] Ejecutando Analizador Sintactico (Parser) y construyendo AST...\033[0m\n" << endl;
+    Parser parser(tokens);
+    auto ast = parser.parsear();
+    bool sintaxisValida = parser.esAceptado();
+    const auto& errSintacticos = parser.getErrores();
+
+    string strAST = ast ? ast->toTreeString() : "(AST no disponible debido a errores sintacticos criticos)\r\n";
+    string strSintactico = ErrorHandler::generarReporteSintactico(sintaxisValida, errSintacticos);
+    string strDiagCompleto = ErrorHandler::generarReporteDiagnosticoCompleto(errores, sintaxisValida, errSintacticos);
+
+    /* Mostrar Arbol Sintactico (AST) en consola */
+    cout << "\033[1;32m" << strAST << "\033[0m" << endl;
+
+    /* Mostrar Diagnostico Sintactico */
+    if (sintaxisValida && errores.empty()) {
+        cout << "\033[1;32m[✓] PROGRAMA ACEPTADO: Sin errores lexicos ni sintacticos.\033[0m\n" << endl;
+        cout << "\033[1;32m" << strSintactico << "\033[0m" << endl;
     } else {
-        int cantAlertas = 0;
-        for (const auto& e : errores) {
-            if (e.mensaje.find("carece de sentido") != string::npos) cantAlertas++;
-        }
-        if (cantAlertas > 0 && cantAlertas == static_cast<int>(errores.size())) {
-            cout << "\033[1;33m" << strErrores << "\033[0m" << endl;
-        } else {
-            cout << "\033[1;31m" << strErrores << "\033[0m" << endl;
-        }
+        cout << "\033[1;31m[✗] PROGRAMA RECHAZADO: Se detectaron fallas estructurales.\033[0m\n" << endl;
+        cout << "\033[1;31m" << strSintactico << "\033[0m" << endl;
     }
 
     /* Guardar archivos de salida */
     cout << "\n[*] Guardando reportes en la carpeta output/..." << endl;
     guardarReporte("output/tokens.txt", strTokens);
     guardarReporte("output/tabla_simbolos.txt", strTabla);
-    guardarReporte("output/errores.txt", strErrores);
+    guardarReporte("output/ast.txt", strAST);
+    guardarReporte("output/errores.txt", strDiagCompleto);
 
     cout << "\n\033[1;32m===================================================================" << endl;
-    cout << " Analisis lexico finalizado con exito." << endl;
+    cout << " Analisis finalizado: Tokens, Simbolos, AST y Diagnostico generados." << endl;
     cout << "===================================================================\033[0m\n" << endl;
 
-    return errores.empty() ? 0 : 2;
+    bool exitoTotal = errores.empty() && sintaxisValida;
+    return exitoTotal ? 0 : 2;
 }

@@ -26,6 +26,7 @@ enum class LexTokenType {
     KW_PRINTLN,   /* println -> <PRINTLN> */
     KW_MAIN,      /* main -> <MAIN> */
     KW_RETURN,    /* return -> <RETURN> */
+    KW_FUNC,      /* func -> <FUNC> (llamada a funcion segun especificacion LP) */
     KW_STRING,    /* string -> <STRING> (adicional) */
 
     /* Operador de asignacion */

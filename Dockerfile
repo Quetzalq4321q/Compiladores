@@ -25,10 +25,10 @@ COPY res/ ./res/
 
 # Compilar los ejecutables de CLI y pruebas en modo Release
 RUN cmake -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build cmake-build --target compilador_lp test_lexer
+    cmake --build cmake-build --target compilador_lp test_lexer test_parser
 
-# Ejecutar las 6 pruebas unitarias durante el build para validar cero errores
-RUN ./cmake-build/test_lexer
+# Ejecutar las pruebas unitarias lexicas y sintacticas durante el build para validar cero errores
+RUN ./cmake-build/test_lexer && ./cmake-build/test_parser
 
 # ------------------------------------------------------------------------------
 # Etapa 2: Imagen Final Ultraligera para Ejecución
@@ -36,8 +36,8 @@ RUN ./cmake-build/test_lexer
 FROM debian:bookworm-slim AS runtime
 
 LABEL maintainer="Compiladores LP - Catedra Compiladores" \
-      description="Analizador Lexico, Tabla de Simbolos y Contencion de Errores para el Lenguaje LP" \
-      version="1.0.0"
+      description="Compilador LP: Analizador Lexico, Sintactico (Descenso Recursivo), AST y Contencion de Errores" \
+      version="2.0.0"
 
 WORKDIR /app
 
@@ -47,11 +47,12 @@ RUN mkdir -p /app/input /app/output /app/res
 # Copiar ejecutables y assets desde la etapa de construcción
 COPY --from=builder /build/cmake-build/compilador_lp /app/compilador_lp
 COPY --from=builder /build/cmake-build/test_lexer /app/test_lexer
+COPY --from=builder /build/cmake-build/test_parser /app/test_parser
 COPY --from=builder /build/input/ /app/input/
 COPY --from=builder /build/res/ /app/res/
 
 # Otorgar permisos de ejecución
-RUN chmod +x /app/compilador_lp /app/test_lexer
+RUN chmod +x /app/compilador_lp /app/test_lexer /app/test_parser
 
 # Definir volúmenes para entrada y salida con la máquina anfitriona
 VOLUME ["/app/input", "/app/output"]

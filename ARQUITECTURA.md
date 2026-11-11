@@ -19,23 +19,30 @@ flowchart TD
         D -- "Válido" --> G
     end
 
-    subgraph Nucleo["Capa 2: Motor Léxico (Core)"]
+    subgraph Nucleo["Capa 2: Motor Léxico y Símbolos"]
         G --> H["Lexer (AFD)"]
         H <--> I["SymbolTable (Identificadores)"]
         H --> J["Vector de Tokens"]
-        H --> K["Vector de Errores"]
+        H --> K["Vector de Errores Léxicos"]
     end
 
-    subgraph Presentacion["Capa 3: Presentación y Salida"]
-        J --> L["ErrorHandler::generarReporteTokens"]
-        I --> M["ErrorHandler::generarReporteTablaSimbolos"]
-        K --> N["ErrorHandler::generarReporteErrores"]
-        L --> O["GUI WinAPI (4 Pestañas)"]
-        M --> O
-        N --> O
-        L --> P["output/tokens.txt"]
-        M --> Q["output/tabla_simbolos.txt"]
-        N --> R["output/errores.txt"]
+    subgraph Sintactico["Capa 3: Motor Sintáctico (Parser) y AST"]
+        J --> L["Parser (Descenso Recursivo)"]
+        L --> M["Árbol de Sintaxis Abstracta (AST)"]
+        L --> N["Vector de Errores Sintácticos"]
+        L --> O["Estado: Aceptado vs Rechazado"]
+    end
+
+    subgraph Presentacion["Capa 4: Presentación y Salida"]
+        J --> P["Secuencia y Tabla de Tokens"]
+        I --> Q["Tabla de Símbolos"]
+        M --> R["Renderizador Visual de AST"]
+        K & N --> S["Diagnóstico Integral Unificado"]
+        P & Q & R & S --> T["GUI WinAPI (5 Pestañas + Banner)"]
+        P --> U["output/tokens.txt"]
+        Q --> V["output/tabla_simbolos.txt"]
+        R --> W["output/ast.txt"]
+        S --> X["output/errores.txt"]
     end
 ```
 
@@ -87,19 +94,21 @@ stateDiagram-v2
 
 | Módulo | Archivos | Responsabilidad Primaria |
 |---|---|---|
-| **Token** | `Token.h`, `Token.cpp` | Definición de tipos léxicos (`LexTokenType`), estructura de metadatos de tokens y mapeo a categorías oficiales de la cátedra. |
+| **Token** | `Token.h`, `Token.cpp` | Definición de tipos léxicos (`LexTokenType`, incluyendo `KW_FUNC`), estructura de metadatos de tokens y mapeo a categorías oficiales de la cátedra. |
 | **Tabla de Símbolos** | `SymbolTable.h`, `SymbolTable.cpp` | Almacenamiento asociativo de identificadores, garantizando que cada identificador conserve una posición única (base 0) e historial de apariciones. |
 | **Lexer** | `Lexer.h`, `Lexer.cpp` | Implementación del autómata finito determinista (AFD) para la tokenización de texto y detección de incidencias léxicas. |
-| **ErrorHandler** | `ErrorHandler.h`, `ErrorHandler.cpp` | Contención de entradas anómalas (imágenes, ejecutables, valores muertos), validación de precondiciones y generación estructurada de reportes. |
+| **AST** | `AST.h`, `AST.cpp` | Jerarquía de nodos polimórficos (`ProgramNode`, `FunctionDeclNode`, `BlockNode`, etc.) y renderizado en árbol visual UTF-8. |
+| **Parser** | `Parser.h`, `Parser.cpp` | Analizador sintáctico por descenso recursivo que valida las reglas gramaticales de LP, genera el AST y recupera errores en modo pánico. |
+| **ErrorHandler** | `ErrorHandler.h`, `ErrorHandler.cpp` | Contención de entradas anómalas (imágenes, ejecutables, valores muertos), validación de precondiciones y generación estructurada de reportes léxicos y sintácticos. |
 | **FileConverter** | `FileConverter.h`, `FileConverter.cpp` | Ingesta multiformato (`.lp`, `.txt`, `.docx`, `.pdf`) y descompresión de contenido textual en memoria. |
-| **GUI WinAPI** | `main.cpp` | Interfaz gráfica nativa de Windows con pestañas interactivas, vinculación de eventos y persistencia en disco. |
-| **Suite de Pruebas** | `tests/test_lexer.cpp` | Batería de 6 pruebas unitarias automatizadas con assertions para verificación continua de calidad. |
+| **GUI WinAPI** | `main.cpp` | Interfaz gráfica nativa de Windows con 5 pestañas interactivas, banner de aceptación/rechazo y persistencia en disco. |
+| **Suite de Pruebas** | `tests/test_lexer.cpp`, `tests/test_parser.cpp` | Baterías de pruebas unitarias automatizadas para certificar el 100% de cumplimiento léxico y sintáctico. |
 
 ---
 
 ## 4. Estrategia de Contención de Errores
 
-Para garantizar la estabilidad del compilador y evitar comportamientos indefinidos o cuelgues, se diseñó una estrategia de **blindaje en tres niveles**:
+Para garantizar la estabilidad del compilador y evitar comportamientos indefinidos o cuelgues, se diseñó una estrategia de **blindaje en cuatro niveles**:
 
 ### Nivel 1: Validación Preventiva de Archivos (Pre-ingesta)
 Antes de que cualquier flujo de bytes ingrese al motor:
@@ -112,21 +121,28 @@ Antes de que cualquier flujo de bytes ingrese al motor:
 Si el usuario pulsa *Analizar* con el editor vacío o únicamente con espacios, saltos de línea y tabuladores:
 * El módulo `ErrorHandler::validarCodigoFuente` intercepta la solicitud y previene la ejecución inútil del analizador, guiando al usuario con una sugerencia de acción.
 
-### Nivel 3: Recuperación de Errores Léxicos (En ejecución)
+### Nivel 3: Recuperación de Errores Léxicos (En escaneo)
 Si durante el análisis léxico se detectan caracteres ajenos al alfabeto de LP:
 * El analizador **no aborta la ejecución** (modo *panic-mode* recuperable).
 * Registra el error en la colección de incidencias, almacena la línea y el lexema causante, y continúa con el siguiente carácter para identificar todos los errores presentes en el programa de una sola pasada.
+
+### Nivel 4: Recuperación de Errores Sintácticos (Modo Pánico en Parser)
+Si la estructura gramatical del programa falla (por ejemplo, falta de `;` o un bloque no cerrado):
+* El `Parser` registra el error exacto con número de línea, token encontrado y construcción esperada.
+* Ejecuta `sincronizar()` descartando tokens hasta encontrar un punto de sincronización seguro (`;`, `}`, palabras reservadas como `int`, `while`, etc.), permitiendo que el parser siga validando el resto del archivo sin colapsar.
 
 ---
 
 ## 5. Salidas Generadas y Persistencia
 
-Al finalizar cada análisis exitoso o con advertencias, el sistema genera de forma concurrente tres representaciones:
+Al finalizar cada análisis exitoso o con advertencias, el sistema genera de forma concurrente cuatro representaciones en `output/`:
 
 1. **Tokens (`output/tokens.txt`)**:
    * Secuencia en formato estándar LP (`<VOID> <MAIN>...`).
    * Tabla analítica con columnas: `#`, `TOKEN`, `LEXEMA`, `CATEGORIA DEL TOKEN`, `LINEA`.
 2. **Tabla de Símbolos (`output/tabla_simbolos.txt`)**:
    * Listado de identificadores únicos con posición base 0, línea de primera aparición y trazabilidad de todas sus apariciones en el código.
-3. **Reporte de Errores (`output/errores.txt`)**:
-   * Inventario de incidencias léxicas con ubicación exacta y descripción detallada del motivo de error. Si no hay errores, se certifica la validez al 100%.
+3. **Árbol Sintáctico (`output/ast.txt`)**:
+   * Estructura jerárquica visual del AST con conectores tipográficos UTF-8.
+4. **Reporte de Diagnóstico (`output/errores.txt`)**:
+   * Diagnóstico integral con secciones separadas para la Fase 1 (Léxica) y la Fase 2 (Sintáctica: Programa Aceptado vs. Programa Rechazado).

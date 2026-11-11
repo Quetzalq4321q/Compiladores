@@ -1,4 +1,10 @@
-=== REPORTE DE ERRORES Y ANOMALIAS LEXICAS (LP) ===
-Total de incidencias encontradas: 0
--------------------------------------------------------------------------------------------
-[ESTADO]: Codigo lexico valido al 100%. Sin errores detectados.
+===========================================================================================
+                      DIAGNOSTICO INTEGRAL DEL COMPILADOR LP                               
+===========================================================================================
+
+[FASE 1: ANALISIS LEXICO]
+-> Estado: Correcto (0 errores lexicos detectados).
+
+[FASE 2: ANALISIS SINTACTICO (PARSER DESCENDENTE RECURSIVO)]
+-> Estado: PROGRAMA ACEPTADO (0 errores sintacticos).
+   El programa cumple con las reglas de produccion de la gramatica formal LP.

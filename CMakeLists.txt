@@ -13,6 +13,8 @@ if (WIN32)
             src/SymbolTable.cpp
             src/FileConverter.cpp
             src/ErrorHandler.cpp
+            src/AST.cpp
+            src/Parser.cpp
             res/resource.rc
     )
     target_link_libraries(Compiladores comctl32 comdlg32 ole32)
@@ -26,13 +28,26 @@ add_executable(compilador_lp
         src/SymbolTable.cpp
         src/FileConverter.cpp
         src/ErrorHandler.cpp
+        src/AST.cpp
+        src/Parser.cpp
 )
 
-# 3. Suite de pruebas unitarias automatizadas
+# 3. Suite de pruebas unitarias del Analizador Lexico
 add_executable(test_lexer
         tests/test_lexer.cpp
         src/Token.cpp
         src/Lexer.cpp
         src/SymbolTable.cpp
         src/ErrorHandler.cpp
+)
+
+# 4. Suite de pruebas unitarias del Analizador Sintactico (Entregable 1)
+add_executable(test_parser
+        tests/test_parser.cpp
+        src/Token.cpp
+        src/Lexer.cpp
+        src/SymbolTable.cpp
+        src/ErrorHandler.cpp
+        src/AST.cpp
+        src/Parser.cpp
 )

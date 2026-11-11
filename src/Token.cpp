@@ -30,6 +30,7 @@ string tokenTypeToString(LexTokenType tipo) {
         case LexTokenType::KW_PRINTLN: return "PRINTLN";
         case LexTokenType::KW_MAIN:    return "MAIN";
         case LexTokenType::KW_RETURN:  return "RETURN";
+        case LexTokenType::KW_FUNC:    return "FUNC";
         case LexTokenType::KW_STRING:  return "STRING";
         case LexTokenType::OP_ASSIGN:  return "=";
         case LexTokenType::OP_SUM:     return "+";
@@ -84,6 +85,7 @@ string Token::toString() const {
     if (tipo == LexTokenType::KW_PRINTLN) return "<PRINTLN>";
     if (tipo == LexTokenType::KW_MAIN)    return "<MAIN>";
     if (tipo == LexTokenType::KW_RETURN)  return "<RETURN>";
+    if (tipo == LexTokenType::KW_FUNC)    return "<FUNC>";
     if (tipo == LexTokenType::KW_STRING)  return "<STRING>";
 
     /* Operador de asignacion */
@@ -141,6 +143,7 @@ string Token::getCategoria() const {
         case LexTokenType::KW_PRINTLN:
         case LexTokenType::KW_MAIN:
         case LexTokenType::KW_RETURN:
+        case LexTokenType::KW_FUNC:
         case LexTokenType::KW_STRING:
             return "Palabra reservada";
         case LexTokenType::OP_ASSIGN:

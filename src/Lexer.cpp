@@ -22,6 +22,7 @@ static const map<string, LexTokenType> PALABRAS_RESERVADAS = {
     {"print",   LexTokenType::KW_PRINTLN},
     {"main",    LexTokenType::KW_MAIN},
     {"return",  LexTokenType::KW_RETURN},
+    {"func",    LexTokenType::KW_FUNC},
     {"string",  LexTokenType::KW_STRING}
 };
 

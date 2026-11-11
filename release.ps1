@@ -100,7 +100,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # 4. Asegurar MinGW en PATH y compilar ejecutables
-Write-Step "Compilando Compiladores.exe, compilador_lp.exe y test_lexer.exe"
+Write-Step "Compilando Compiladores.exe, compilador_lp.exe, test_lexer.exe y test_parser.exe"
 $mingwBin = "C:\Users\User\AppData\Local\Programs\CLion\bin\mingw\bin"
 if (Test-Path $mingwBin) {
     $env:PATH = "$mingwBin;" + $env:PATH
@@ -115,15 +115,17 @@ $buildDir = Join-Path $projectRoot "cmake-build-debug"
 $exeGui   = Join-Path $buildDir "Compiladores.exe"
 $exeCli   = Join-Path $buildDir "compilador_lp.exe"
 $exeTests = Join-Path $buildDir "test_lexer.exe"
+$exeParserTests = Join-Path $buildDir "test_parser.exe"
 
 # Detener procesos que puedan bloquear los binarios
 Stop-Process -Name "Compiladores" -ErrorAction SilentlyContinue
 Stop-Process -Name "compilador_lp" -ErrorAction SilentlyContinue
 Stop-Process -Name "test_lexer" -ErrorAction SilentlyContinue
+Stop-Process -Name "test_parser" -ErrorAction SilentlyContinue
 
 if (Test-Path $cmakeExe) {
     Write-Host "Compilando con CMake..." -ForegroundColor Yellow
-    & $cmakeExe --build $buildDir --target Compiladores compilador_lp test_lexer
+    & $cmakeExe --build $buildDir --target Compiladores compilador_lp test_lexer test_parser
 } else {
     Write-Host "Aviso: No se encontro cmake.exe directo, verificando binarios..." -ForegroundColor Yellow
 }
@@ -134,13 +136,20 @@ if (-not (Test-Path $exeGui)) {
 Write-Host "Binario GUI listo: $exeGui" -ForegroundColor Green
 
 # Ejecutar pruebas unitarias para certificar el build
-Write-Step "Verificando Suite de Pruebas Unitarias"
+Write-Step "Verificando Suite de Pruebas Unitarias (Lexer y Parser)"
 if (Test-Path $exeTests) {
     & $exeTests
     if ($LASTEXITCODE -ne 0) {
-        throw "Las pruebas unitarias fallaron. No se puede proceder con el release."
+        throw "Las pruebas unitarias del Lexer fallaron. No se puede proceder con el release."
     }
-    Write-Host "Todas las pruebas unitarias pasaron al 100%." -ForegroundColor Green
+    Write-Host "Pruebas del Analizador Lexico pasaron al 100%." -ForegroundColor Green
+}
+if (Test-Path $exeParserTests) {
+    & $exeParserTests
+    if ($LASTEXITCODE -ne 0) {
+        throw "Las pruebas unitarias del Parser fallaron. No se puede proceder con el release."
+    }
+    Write-Host "Pruebas del Analizador Sintactico (Entregable 1) pasaron al 100%." -ForegroundColor Green
 }
 
 # 5. Construccion de Docker si esta disponible
@@ -181,6 +190,9 @@ if (Test-Path $exeCli) {
 }
 if (Test-Path $exeTests) {
     Copy-Item -Path $exeTests -Destination $stagingDir
+}
+if (Test-Path $exeParserTests) {
+    Copy-Item -Path $exeParserTests -Destination $stagingDir
 }
 
 # Copiar DLLs de runtime de MinGW si existen para hacer el paquete 100% portable

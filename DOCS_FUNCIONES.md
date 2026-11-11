@@ -22,7 +22,7 @@ Representa la unidad básica de información léxica generada por el escáner.
 ### 1.1 Enumeración `LexTokenType`
 Define las familias y tipos de componentes léxicos admitidos en LP:
 * **Identificadores y literales**: `ID`, `TEXTO`, `NUM_INT`, `NUM_DEC`.
-* **Palabras reservadas**: `KW_INT`, `KW_FLOAT`, `KW_CHAR`, `KW_BOOLEAN`, `KW_VOID`, `KW_IF`, `KW_ELSE`, `KW_FOR`, `KW_WHILE`, `KW_SCANF`, `KW_PRINTLN`, `KW_MAIN`, `KW_RETURN`, `KW_STRING`.
+* **Palabras reservadas**: `KW_INT`, `KW_FLOAT`, `KW_CHAR`, `KW_BOOLEAN`, `KW_VOID`, `KW_IF`, `KW_ELSE`, `KW_FOR`, `KW_WHILE`, `KW_SCANF`, `KW_PRINTLN`, `KW_MAIN`, `KW_RETURN`, `KW_STRING`, `KW_FUNC`.
 * **Operadores de asignación**: `OP_ASSIGN` (`=`).
 * **Operadores aritméticos**: `OP_SUM` (`+`), `OP_SUB` (`-`), `OP_MUL` (`*`), `OP_DIV` (`/`), `OP_MOD` (`%`).
 * **Operadores lógicos**: `OP_AND` (`&&`), `OP_OR` (`||`), `OP_NOT` (`!`).
@@ -292,14 +292,16 @@ Gestiona la importación y extracción de texto desde diversos formatos físicos
 Implementa la interfaz gráfica de usuario en modo nativo Win32 (sin requerir dependencias de terceros ni frameworks pesados).
 
 ### 6.1 Controles e Identificadores
-* `IDC_TAB (100)`: Control de pestañas (`SysTabControl32`).
+* `IDC_TAB (100)`: Control de pestañas (`SysTabControl32`) con 5 pestañas de navegación.
 * `IDC_BTN_ABRIR (101)`: Botón "Abrir Archivo".
 * `IDC_BTN_ANALIZAR (102)`: Botón "Analizar".
 * `IDC_LABEL_FILE (103)`: Etiqueta estática con el nombre del archivo activo.
+* `IDC_LABEL_STATUS (104)`: Banner superior de estado (`[✓] PROGRAMA ACEPTADO` / `[✗] PROGRAMA RECHAZADO`).
 * `IDC_EDIT_ENTRADA (109)`: Editor multilínea para el código fuente editable.
 * `IDC_EDIT_TOKENS (110)`: Panel de visualización de secuencia y tabla de tokens.
 * `IDC_EDIT_TABLA (111)`: Panel de visualización de la tabla de símbolos.
-* `IDC_EDIT_ERRORES (112)`: Panel de visualización de errores léxicos.
+* `IDC_EDIT_ERRORES (112)`: Panel de diagnóstico integral (léxico y sintáctico).
+* `IDC_EDIT_AST (113)`: Panel de visualización jerárquica del Árbol de Sintaxis Abstracta (AST).
 
 ### 6.2 Funciones Principales
 
@@ -312,17 +314,71 @@ Implementa la interfaz gráfica de usuario en modo nativo Win32 (sin requerir de
 
 ##### `LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)`
 * **Descripción**: Procedimiento de ventana encargado de procesar los mensajes del sistema operativo:
-  * `WM_CREATE`: Crea fuentes Segoe UI y Consolas, botones, etiqueta, pestañas y los cuatro paneles `EDIT`.
+  * `WM_CREATE`: Crea fuentes Segoe UI y Consolas, botones, etiqueta, pestañas y los cinco paneles `EDIT`.
   * `WM_SIZE`: Invoca `redimensionarPaneles()` para diseño adaptable dinámico.
   * `WM_COMMAND`: Maneja las pulsaciones de los botones Abrir (`IDC_BTN_ABRIR`) y Analizar (`IDC_BTN_ANALIZAR`).
   * `WM_NOTIFY`: Responde a la notificación `TCN_SELCHANGE` para alternar la pestaña activa.
   * `WM_DESTROY`: Invoca `PostQuitMessage(0)` para cerrar la aplicación ordenadamente.
 
 ##### `static void ejecutarAnalisis(HWND hWnd)`
-* **Descripción**: Obtiene el texto del control `hEditEntrada`, ejecuta las validaciones de contención en `ErrorHandler`, instancia el `Lexer`, procesa los tokens, actualiza los tres paneles de resultados en la GUI, conmuta automáticamente a la pestaña de tokens y guarda copias físicas en `output/tokens.txt`, `output/tabla_simbolos.txt` y `output/errores.txt`.
+* **Descripción**: Obtiene el texto del control `hEditEntrada`, ejecuta las validaciones de contención en `ErrorHandler`, ejecuta el `Lexer`, ejecuta el `Parser`, construye el AST, actualiza los paneles de resultados en la GUI, actualiza el banner de estado (`[✓]` o `[✗]`), conmuta a la pestaña correspondiente y guarda copias físicas en `output/tokens.txt`, `output/tabla_simbolos.txt`, `output/ast.txt` y `output/errores.txt`.
 
 ##### `static void mostrarPestana(int idx)`
-* **Descripción**: Oculta los cuatro controles `EDIT` y hace visible exclusivamente el correspondiente al índice de la pestaña seleccionada (0: Entrada, 1: Tokens, 2: Tabla, 3: Errores).
+* **Descripción**: Oculta los cinco controles `EDIT` y hace visible exclusivamente el correspondiente al índice de la pestaña seleccionada (0: Entrada, 1: Tokens, 2: Tabla, 3: AST, 4: Errores).
 
 ##### `static void redimensionarPaneles(HWND hWnd)`
 * **Descripción**: Calcula las coordenadas del área cliente de la ventana y ajusta proporcionalmente el tamaño y posición de la barra superior, el control de pestañas y el área interna de los paneles de edición.
+
+---
+
+## 7. Módulo del Árbol de Sintaxis Abstracta (`AST.h` / `AST.cpp`)
+
+Define la jerarquía de clases polimórficas que modelan las estructuras sintácticas del lenguaje LP y proporcionan renderizado en árbol visual UTF-8.
+
+### 7.1 Jerarquía de Clases
+* **`ASTNode`**: Clase base abstracta. Contiene atributo `linea` y método virtual puro `toTreeString(prefix, isLast)`.
+* **`ProgramNode`**: Nodo raíz del programa LP (`PROGRAMA -> LISTA_FUNCIONES PRINCIPAL`). Contiene lista de `FunctionDeclNode` y el puntero a `funcionPrincipal`.
+* **`FunctionDeclNode`**: Representa una función declarada con `tipoRetorno`, `nombre`, vector de parámetros `Parametro{tipo, nombre}` y puntero a `BlockNode`.
+* **`BlockNode`**: Representa un bloque delimitado por llaves `{ ... }`. Almacena vector de `VarDeclNode` y vector de comandos ejecutables `ASTNode`.
+* **`VarDeclNode`**: Declaración de variables locales (`tipo`, lista de `nombres`).
+* **`AssignNode`**: Asignación de variables (`id`, `indices` para arreglos, puntero a `expresion`).
+* **`ScanfNode`**: Sentencia de lectura `scanf(...)`.
+* **`PrintlnNode`**: Sentencia de escritura `println(...)`.
+* **`IfNode`**: Estructura condicional `if (condicion) bloqueSi else bloqueSino`.
+* **`WhileNode`**: Estructura de repetición `while (condicion) bloque`.
+* **`ReturnNode`**: Sentencia de retorno `return expresion;`.
+* **`ExprNode`**: Clase base para expresiones con soporte de tipos.
+* **`LiteralNode`**: Literales de números enteros, decimales, textos o booleanos.
+* **`IdentifierNode`**: Uso de identificadores con índices opcionales de arreglo.
+* **`BinaryOpNode`**: Operaciones binarias aritméticas, lógicas y relacionales (`+`, `-`, `*`, `/`, `%`, `&&`, `||`, `==`, `!=`, `<`, `>`, `<=`, `>=`).
+* **`UnaryOpNode`**: Operaciones unarias (`!`, `-`).
+* **`FuncCallNode`**: Invocación de función con palabra reservada `func` (`func id(args)`).
+
+---
+
+## 8. Módulo del Analizador Sintáctico (`Parser.h` / `Parser.cpp`)
+
+Implementa el analizador sintáctico por descenso recursivo puro para la gramática libre de contexto formal de LP.
+
+### 8.1 Estructura `SyntaxError`
+* `int linea`: Número de línea donde se detectó la discrepancia sintáctica.
+* `string tokenEncontrado`: Lexema o tipo del token que causó el error.
+* `string construccionEsperada`: Descripción del símbolo o estructura esperada.
+* `string mensaje`: Explicación detallada del error sintáctico orientada a la corrección.
+
+### 8.2 Métodos del `Parser`
+* **`explicit Parser(const vector<Token>& tokens)`**: Inicializa el analizador con la secuencia de tokens provista por el `Lexer`.
+* **`shared_ptr<ProgramNode> parsear()`**: Ejecuta el análisis sintáctico completo y devuelve la raíz del AST.
+* **`bool esAceptado() const`**: Devuelve `true` si y solo si el programa no presentó ningún error sintáctico (Aceptado vs. Rechazado).
+* **`const vector<SyntaxError>& getErrores() const`**: Devuelve el vector de errores sintácticos registrados.
+* **`string getReporteErrores() const`**: Genera el informe textual del estado de aceptación o detalle de fallos.
+* **`void sincronizar()`**: Implementa el algoritmo de recuperación en modo pánico saltando tokens hasta puntos seguros (`;`, `}`, `void`, `int`, etc.).
+* **Métodos de descenso recursivo correspondientes a la gramática formal**:
+  * `parsePrograma()`, `parseListaFunciones()`, `parseDeclaracionFuncion()`
+  * `parseTipoRetorno()`, `parseTipo()`, `parseTipoBase()`, `parseDimension()`
+  * `parseParametros()`, `parseListaParametros()`, `parsePrincipal()`, `parseBloque()`
+  * `parseListaVariables()`, `parseListaId()`, `parseComandos()`, `parseComando()`
+  * `parseAsignacion()`, `parseComplemento()`, `parseFuncion()`
+  * `parseExpresion()`, `parseExpresionO()`, `parseExpresionY()`, `parseExpresionNo()`
+  * `parseExpresionComp()`, `parseExpresionAditiva()`, `parseExpresionMult()`, `parseTerminoExpr()`
+  * `parseRetorno()`, `parseLectura()`, `parseEscritura()`, `parseSeleccion()`, `parseMientras()`.

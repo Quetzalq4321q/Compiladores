@@ -27,23 +27,25 @@ Bienvenido al manual de uso del **Analizador Léxico para el Lenguaje LP (Lengua
 
 ## 3. Guía de Uso de la Interfaz Gráfica
 
-La interfaz gráfica nativa está dividida en una barra de controles superior y un área central organizada en cuatro pestañas:
+La interfaz gráfica nativa está dividida en una barra de controles superior con indicador de estado y un área central organizada en cinco pestañas:
 
 ```
-+-------------------------------------------------------------------------------+
-| [ Abrir Archivo ]   [ Analizar ]   ejemplo.lp (codigo cargado)                |
-+-------------------------------------------------------------------------------+
-| [ Entrada (Codigo Fuente) ] [ Tokens ] [ Tabla de Simbolos ] [ Errores ]      |
-|                                                                               |
-|  void main() {                                                                |
-|  int edad = 20;                                                               |
-|  float promedio = 15.5;                                                       |
-|  if (edad >= 18 && edad <= 60) {                                              |
-|      println("Edad valida");                                                  |
-|  }                                                                            |
-|  return;                                                                      |
-|  }                                                                            |
-+-------------------------------------------------------------------------------+
++-------------------------------------------------------------------------------------------------+
+| [ Abrir Archivo ]   [ Analizar ]   ejemplo.lp (codigo)   [✓] PROGRAMA ACEPTADO: 0 err.          |
++-------------------------------------------------------------------------------------------------+
+| [ Entrada (Codigo Fuente) ] [ Tokens ] [ Simbolos ] [ Arbol Sintactico (AST) ] [ Diagnostico ]  |
+|                                                                                                 |
+|  void main() {                                                                                  |
+|      int edad;                                                                                  |
+|      float promedio;                                                                            |
+|      edad = 20;                                                                                 |
+|      promedio = 15.5;                                                                           |
+|      if (edad >= 18 && edad <= 60) {                                                            |
+|          println("Edad valida");                                                                |
+|      }                                                                                          |
+|      return 0;                                                                                  |
+|  }                                                                                              |
++-------------------------------------------------------------------------------------------------+
 ```
 
 ### 3.1 Pestaña 1: Entrada (Código Fuente)
@@ -52,12 +54,45 @@ La interfaz gráfica nativa está dividida en una barra de controles superior y 
   * Formatos soportados: `.lp`, `.txt`, `.docx` (Microsoft Word) y `.pdf`.
 * **Protección contra archivos inválidos**:
   * Si intentas abrir un archivo de imagen (`.png`, `.jpg`, `.bmp`, etc.), un ejecutable (`.exe`, `.dll`) o un archivo vacío, el sistema mostrará una advertencia clara indicando por qué no se puede procesar y no afectará el estado del compilador.
-* **Botón "Analizar"**: Ejecuta el análisis léxico completo sobre el texto visible en pantalla.
+* **Botón "Analizar"**: Ejecuta el análisis léxico y sintáctico completo sobre el texto visible en pantalla.
 
 ### 3.2 Pestaña 2: Secuencia de Tokens
-Al pulsar el botón **[Analizar]**, el sistema conmuta automáticamente a esta pestaña para presentarte dos vistas:
-1. **Secuencia de Tokens por Línea**: La representación canónica de los tokens entre corchetes angulares respetando las líneas del código fuente:
-   ```text
+Presenta:
+1. **Secuencia de Tokens por Línea**: La representación canónica de los tokens entre corchetes angulares respetando las líneas del código fuente.
+2. **Tabla Detallada de Tokens**: Número correlativo, token canónico, lexema, categoría formal LP y línea de código.
+
+### 3.3 Pestaña 3: Tabla de Símbolos
+Muestra todos los identificadores únicos encontrados con su posición única base 0, línea inicial y trazabilidad de apariciones.
+
+### 3.4 Pestaña 4: Árbol Sintáctico (AST)
+Al aceptar un programa o tras recuperarse de errores no críticos, muestra la estructura jerárquica del programa renderizada como un árbol visual UTF-8 con ramas (`├──`, `└──`, `│   `):
+```text
+PROGRAMA LP
+└── Funcion: void main() (Línea 1)
+    └── Bloque { ... } (Línea 1)
+        ├── Decl Variable [int]: edad (Línea 2)
+        ├── Decl Variable [float]: promedio (Línea 3)
+        ├── Asignacion: edad = ... (Línea 4)
+        │   └── Literal [int]: 20 (Línea 4)
+        └── Asignacion: promedio = ... (Línea 5)
+            └── Literal [float]: 15.5 (Línea 5)
+```
+
+### 3.5 Pestaña 5: Diagnóstico y Errores (Léxico y Sintáctico)
+Ofrece un reporte estructurado y unificado con:
+* **Fase 1 (Léxica)**: Conteo y detalle de caracteres no reconocidos o anomalías léxicas.
+* **Fase 2 (Sintáctica)**: Diagnóstico formal de aceptación (`[ESTADO]: PROGRAMA ACEPTADO`) o rechazo (`[ESTADO]: PROGRAMA RECHAZADO`), indicando línea, token encontrado y construcción esperada según la gramática formal LP.
+
+---
+
+## 4. Archivos de Salida Automáticos
+
+Cada vez que ejecutas el análisis, se generan automáticamente archivos de texto plano dentro de la carpeta `output/`:
+
+* [`output/tokens.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tokens.txt): Contiene la secuencia formateada por líneas y la tabla clasificada completa.
+* [`output/tabla_simbolos.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tabla_simbolos.txt): Contiene la tabla de identificadores únicos con sus posiciones y apariciones.
+* [`output/ast.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/ast.txt): Contiene la representación visual del Árbol de Sintaxis Abstracta (AST).
+* [`output/errores.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/errores.txt): Contiene el diagnóstico integral unificado de las fases léxica y sintáctica.
    <VOID> <MAIN> <(> <)> <{>
    <INT> <ID,0> <=> <NUM_INT> <;>
    <FLOAT> <ID,1> <=> <NUM_DEC> <;>
@@ -147,6 +182,59 @@ Salida esperada:
 ========================================
  TODAS LAS PRUEBAS PASARON EXITOSAMENTE 
 ========================================
+```
+
+### 5.2 Pruebas Unitarias del Analizador Sintáctico (Entregable 1)
+```powershell
+# Compilar el ejecutable de pruebas sintacticas
+cmake --build cmake-build-debug --target test_parser
+
+# Ejecutar las pruebas sintacticas
+.\cmake-build-debug\test_parser.exe
+```
+
+Salida esperada:
+```text
+=======================================================
+ SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO LP (ENTREGABLE 1)
+=======================================================
+
+=== Test 1: Programa Valido Minimo (Seccion 4.2) ===
+[PASS] Programa valido aceptado exitosamente por el Parser.
+[INFO] Arbol Sintactico generado:
+PROGRAMA LP
+└── Funcion: void main() (Línea 1)
+    └── Bloque { ... } (Línea 1)
+        ├── Decl Variable [int]: edad (Línea 2)
+        ├── Decl Variable [float]: promedio (Línea 3)
+        ├── Asignacion: edad = ... (Línea 4)
+        │   └── Literal [int]: 20 (Línea 4)
+        └── Asignacion: promedio = ... (Línea 5)
+            └── Literal [float]: 15.5 (Línea 5)
+
+=== Test 2: Programa Invalido por Falta de ';' (Seccion 4.3) ===
+[PASS] Error sintactico de falta de ';' detectado correctamente en linea 3.
+=== REPORTE DE ANALISIS SINTACTICO (LP) ===
+[ESTADO]: PROGRAMA RECHAZADO. Total de errores sintacticos: 1
+
+=== Test 3: Programa Invalido por Llave de Cierre Faltante ===
+[PASS] Rechazo correcto de bloque no cerrado.
+
+=== Test 4: Palabra Reservada 'func' y Declaracion/Llamada de Funciones ===
+[PASS] Declaracion e invocacion con 'func' analizadas correctamente en AST.
+
+=== Test 5: Estructuras de Control (while, if, else, println, scanf) ===
+[PASS] Sentencias de control, lectura y escritura validadas 100%.
+
+=== Test 6: Arreglos y Dimensiones ===
+[PASS] Arreglos multidimensionales analizados correctamente.
+
+=== Test 7: Recuperacion de Errores (Modo Panico) ===
+[PASS] Modo panico sincronizo con exito y continuo el analisis sintactico.
+
+=======================================================
+ [100% PASS] TODAS LAS PRUEBAS SINTACTICAS COMPLETADAS EXITOSAMENTE
+=======================================================
 ```
 
 ---

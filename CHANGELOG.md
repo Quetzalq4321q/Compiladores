@@ -1,8 +1,78 @@
 # Changelog - Compiladores LP
 
-Todos los cambios notables en el proyecto **Compiladores (Analizador Léxico LP)** están documentados en este archivo.
+Todos los cambios notables en el proyecto **Compiladores (Lenguaje LP)** están documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+---
+
+## [2.0.0] - 2026-11-11
+
+### Entregable 1 - Analizador Sintáctico por Descenso Recursivo, AST y GUI de 5 Pestañas (30%)
+
+Esta versión marca la entrega formal del **Entregable 1 del Analizador Sintáctico** para el lenguaje formal **LP (Lenguaje de Programación)**, cumpliendo con la gramática libre de contexto especificada por la cátedra, diferenciación de aceptación vs. rechazo, construcción del Árbol de Sintaxis Abstracta (AST), reporte de errores sintácticos con recuperación por modo pánico y actualización de la interfaz gráfica y CLI.
+
+### Añadido
+* **Analizador Sintáctico por Descenso Recursivo (`Parser`)**:
+  * Implementación recursiva pura en `src/Parser.h` y `src/Parser.cpp` cuyos métodos coinciden exactamente con los no terminales de la gramática formal:
+    * `PROGRAMA -> LISTA_FUNCIONES PRINCIPAL`
+    * `LISTA_FUNCIONES -> DECLARACION_FUNCION LISTA_FUNCIONES | ε`
+    * `DECLARACION_FUNCION -> [func] TIPO_RETORNO id ( PARAMETROS ) BLOQUE`
+    * `TIPO_RETORNO -> TIPO | void`
+    * `TIPO -> TIPO_BASE DIMENSION`
+    * `TIPO_BASE -> int | float | char | boolean | string`
+    * `DIMENSION -> [ num_int ] DIMENSION | ε`
+    * `PARAMETROS -> TIPO id LISTA_PARAMETROS | ε`
+    * `LISTA_PARAMETROS -> , TIPO id LISTA_PARAMETROS | ε`
+    * `PRINCIPAL -> [TIPO_RETORNO] main ( ) BLOQUE`
+    * `BLOQUE -> { LISTA_VARIABLES COMANDOS }`
+    * `LISTA_VARIABLES -> TIPO id DIMENSION LISTA_ID ; LISTA_VARIABLES | ε`
+    * `LISTA_ID -> , id DIMENSION LISTA_ID | ε`
+    * `COMANDOS -> COMANDO COMANDOS | ε`
+    * `COMANDO -> ASIGNACION | RETORNO | LECTURA | ESCRITURA | SELECCION | MIENTRAS | FUNCION`
+    * `ASIGNACION -> id [DIMENSION] = COMPLEMENTO ;`
+    * `COMPLEMENTO -> EXPRESION | FUNCION`
+    * `FUNCION -> func id ( ARGUMENTOS )`
+    * Jerarquía completa de expresiones por precedencia de operadores: `EXPRESION -> EXPRESION_O -> EXPRESION_Y -> EXPRESION_NO -> EXPRESION_COMP -> EXPRESION_ADITIVA -> EXPRESION_MULT -> TERMINO_EXPR`.
+    * `RETORNO -> return EXPRESION ;` (con validación de que `return;` vacío es un error sintáctico).
+    * `LECTURA -> scanf ( TERMINO_LECTURA NUEVO_TERMINO_LECTURA ) ;`
+    * `ESCRITURA -> println ( TERMINO_ESCRITURA NUEVO_TERMINO_ESCRITURA ) ;`
+    * `SELECCION -> if ( EXPRESION ) BLOQUE SINO`
+    * `SINO -> else BLOQUE | ε`
+    * `MIENTRAS -> while ( EXPRESION ) BLOQUE`
+* **Incorporación de la Palabra Reservada `func` al Analizador Léxico**:
+  * Nuevo tipo `LexTokenType::KW_FUNC` reconocido como `<FUNC>`.
+  * Categoría: *"Palabra reservada"*.
+* **Jerarquía de Clases del Árbol de Sintaxis Abstracta (AST)**:
+  * Archivos `src/AST.h` y `src/AST.cpp` con nodos polimórficos:
+    * `ASTNode` (clase base abstracta con método `toTreeString()`).
+    * `ProgramNode`, `FunctionDeclNode`, `BlockNode`, `VarDeclNode`, `AssignNode`.
+    * `ScanfNode`, `PrintlnNode`, `IfNode`, `WhileNode`, `ReturnNode`.
+    * `ExprNode`, `LiteralNode`, `IdentifierNode`, `BinaryOpNode`, `UnaryOpNode`, `FuncCallNode`.
+  * Visualización estructurada con ramas de árbol UTF-8 (`├──`, `└──`, `│   `).
+* **Diferenciación de Aceptación vs. Rechazo**:
+  * Método `parser.esAceptado()` que devuelve `true` únicamente si 0 errores sintácticos fueron registrados.
+  * Banner visual y en consola:
+    * `[✓] PROGRAMA ACEPTADO` en caso de validez total.
+    * `[✗] PROGRAMA RECHAZADO` con conteo de errores léxicos y sintácticos.
+* **Recuperación de Errores por Modo Pánico (Panic Mode Recovery)**:
+  * El parser detecta errores sintácticos, los almacena con línea, token encontrado y construcción esperada, y sincroniza hasta el siguiente punto seguro (`;`, `}`, palabras clave) para continuar analizando y no colapsar.
+* **Interfaz Gráfica Actualizada (5 Pestañas)**:
+  * Pestaña 0: `Entrada (Código Fuente)`
+  * Pestaña 1: `Secuencia de Tokens`
+  * Pestaña 2: `Tabla de Símbolos`
+  * Pestaña 3: `Árbol Sintáctico (AST)` (Nueva)
+  * Pestaña 4: `Diagnóstico y Errores` (Léxico y Sintáctico unificados)
+  * Banner superior dinámico `[✓] / [✗]` indicando el estado del análisis.
+* **Exportación de Reporte AST**:
+  * Nuevo archivo generado automáticamente en disco: `output/ast.txt`.
+* **Casos de Prueba Oficiales para Entregable 1 (`tests/`)**:
+  * `tests/entregable1_valido.lp`: Código mínimo válido de la sección 4.2 de la guía docente.
+  * `tests/entregable1_invalido1.lp`: Código con error por falta de `;` de la sección 4.3.
+  * `tests/entregable1_invalido2.lp`: Código con bloque no cerrado (`}`).
+  * `tests/entregable1_funciones.lp`: Programa con declaración de funciones y llamada con `func`.
+* **Suite de Pruebas Unitarias del Analizador Sintáctico (`test_parser.exe`)**:
+  * 7 tests automatizados cubriendo casos válidos, inválidos, modo pánico, matrices y funciones con 100% de éxito.
 
 ---
 

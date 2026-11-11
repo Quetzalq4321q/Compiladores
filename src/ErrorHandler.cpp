@@ -1,4 +1,5 @@
 #include "ErrorHandler.h"
+#include "Parser.h"
 
 #include <fstream>
 #include <sstream>
@@ -312,5 +313,64 @@ string ErrorHandler::generarReporteTablaSimbolos(const SymbolTable& tabla) {
             ss << "\r\n";
         }
     }
+    return ss.str();
+}
+
+/* Genera el reporte formateado del analisis sintactico */
+string ErrorHandler::generarReporteSintactico(bool aceptado, const vector<SyntaxError>& errores) {
+    ostringstream ss;
+    ss << "=== REPORTE DE ANALISIS SINTACTICO (LP) ===\r\n";
+    if (aceptado && errores.empty()) {
+        ss << "[ESTADO]: PROGRAMA ACEPTADO\r\n";
+        ss << "Estructura sintactica 100% valida segun la gramatica formal LP.\r\n";
+        return ss.str();
+    }
+
+    ss << "[ESTADO]: PROGRAMA RECHAZADO\r\n";
+    ss << "Se encontraron " << errores.size() << " error(es) sintactico(s).\r\n";
+    ss << "-------------------------------------------------------------------------------------------\r\n";
+    ss << "LINEA      TOKEN ENCONTRADO              DESCRIPCION DEL ERROR SINTACTICO\r\n";
+    ss << "-------------------------------------------------------------------------------------------\r\n";
+
+    for (const auto& e : errores) {
+        string lin = "Linea " + to_string(e.linea);
+        lin.resize(11, ' ');
+        string tok = "'" + e.tokenEncontrado + "'";
+        if (tok.size() < 30) tok.resize(30, ' ');
+        else tok += " ";
+        ss << lin << tok << e.mensaje << "\r\n";
+    }
+    ss << "-------------------------------------------------------------------------------------------\r\n";
+    return ss.str();
+}
+
+/* Genera un reporte unificado de diagnostico (lexico y sintactico) */
+string ErrorHandler::generarReporteDiagnosticoCompleto(const vector<Token>& errLexicos,
+                                                       bool sintaxisAceptada,
+                                                       const vector<SyntaxError>& errSintacticos) {
+    ostringstream ss;
+    ss << "===========================================================================================\r\n";
+    ss << "                      DIAGNOSTICO INTEGRAL DEL COMPILADOR LP                               \r\n";
+    ss << "===========================================================================================\r\n\r\n";
+
+    /* Seccion 1: Diagnostico Lexico */
+    ss << "[FASE 1: ANALISIS LEXICO]\r\n";
+    if (errLexicos.empty()) {
+        ss << "-> Estado: Correcto (0 errores lexicos detectados).\r\n\r\n";
+    } else {
+        ss << "-> Estado: " << errLexicos.size() << " error(es) lexico(s) detectado(s).\r\n";
+        ss << generarReporteErrores(errLexicos) << "\r\n";
+    }
+
+    /* Seccion 2: Diagnostico Sintactico */
+    ss << "[FASE 2: ANALISIS SINTACTICO (PARSER DESCENDENTE RECURSIVO)]\r\n";
+    if (sintaxisAceptada && errSintacticos.empty()) {
+        ss << "-> Estado: PROGRAMA ACEPTADO (0 errores sintacticos).\r\n";
+        ss << "   El programa cumple con las reglas de produccion de la gramatica formal LP.\r\n";
+    } else {
+        ss << "-> Estado: PROGRAMA RECHAZADO (" << errSintacticos.size() << " errores sintacticos).\r\n";
+        ss << generarReporteSintactico(false, errSintacticos);
+    }
+
     return ss.str();
 }

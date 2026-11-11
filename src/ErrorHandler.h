@@ -7,6 +7,9 @@
 
 using namespace std;
 
+/* Declaracion anticipada para errores sintacticos */
+struct SyntaxError;
+
 /* Tipos de problemas detectados en la contencion de entradas y archivos */
 enum class TipoFalloEntrada {
     NINGUNO,              /* Entrada valida y procesable */
@@ -46,6 +49,14 @@ public:
 
     /* Genera la salida detallada de la tabla de simbolos */
     static string generarReporteTablaSimbolos(const SymbolTable& tabla);
+
+    /* Genera el reporte formateado del analisis sintactico */
+    static string generarReporteSintactico(bool aceptado, const vector<SyntaxError>& errores);
+
+    /* Genera un reporte unificado de diagnostico (lexico y sintactico) */
+    static string generarReporteDiagnosticoCompleto(const vector<Token>& errLexicos,
+                                                    bool sintaxisAceptada,
+                                                    const vector<SyntaxError>& errSintacticos);
 
 private:
     /* Extrae la extension en minusculas */
