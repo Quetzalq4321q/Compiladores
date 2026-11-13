@@ -3,7 +3,7 @@
 ===========================================================================================
 
 [ESTADO]: EJECUCION EXITOSA
-Tiempo de ejecucion: 0.087 ms
+Tiempo de ejecucion: 0.229 ms
 Codigo de retorno  : 0
 -------------------------------------------------------------------------------------------
 SALIDA DEL PROGRAMA (println):
