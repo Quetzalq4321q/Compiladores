@@ -1,12 +1,19 @@
-# Compiladores - Analizador Léxico y Sintáctico (Parser) para Lenguaje LP
+﻿# Compiladores - Analizador Léxico, Sintáctico (Parser) e Intérprete para Lenguaje LP
 
 <p align="center">
   <img src="res/compiler.png" width="128" height="128" alt="Icono Compilador LP" />
   <br>
-  <strong>Compilador, Analizador Léxico, Parser por Descenso Recursivo y Árbol AST para Lenguaje LP (C++20)</strong>
+  <strong>Compilador, Analizador Léxico, Parser por Descenso Recursivo, Árbol AST e Intérprete LP (C++20)</strong>
 </p>
 
-Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Programación)**, correspondiente al **Entregable 1 (30%) de la fase de Análisis Sintáctico**. Incluye analizador sintáctico por descenso recursivo puro, construcción del Árbol de Sintaxis Abstracta (AST), diferenciación formal entre programas aceptados y rechazados, recuperación de errores sintácticos en modo pánico, interfaz gráfica nativa en Windows (WinAPI) con 5 pestañas interactivas, versión CLI multiplataforma (Linux/Docker/Windows), tabla de símbolos integrada, soporte multiformato (.lp, .txt, .docx, .pdf) y suites de pruebas automatizadas.
+Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Programación)**, correspondiente al **Entregable 1 (30%) de la fase de Análisis Sintáctico y Motor de Ejecución en Tiempo Real**. Incluye:
+* **Analizador sintáctico por descenso recursivo puro** y construcción del Árbol de Sintaxis Abstracta (AST).
+* **Motor de Ejecución en Tiempo Real (Intérprete LP)**: Evalúa programas válidos directamente en memoria (variables, arreglos multidimensionales, operadores aritméticos/lógicos/relacionales, llamadas unc, condicionales if/else, bucles while, println y eturn).
+* **Tabla de Símbolos Optimizada**: Búsquedas e inserciones en tiempo constante amortizado O(1) mediante tabla hash std::unordered_map.
+* **Portabilidad Total Sin Errores de DLLs**: Enlace estático de runtime C++ (-static-libgcc -static-libstdc++) y bundling de libwinpthread-1.dll, eliminando cualquier error de librerías faltantes en Windows.
+* **Interfaz Gráfica Nativa Moderna (WinAPI v6)**: 6 pestañas interactivas con estilos visuales modernos de Windows 10/11 (manifiesto Common-Controls v6), consola terminal de ejecución integrada (fondo oscuro RGB(20,24,30) con texto verde terminal RGB(50,255,140)) y barra de herramientas con ejecución inmediata [ ▶ Ejecutar LP ].
+* **Versión CLI Multiplataforma**: Ejecuta en Linux, Docker y Windows generando reportes completos en output/ (incluyendo output/ejecucion.txt).
+* **Suites de Pruebas Automatizadas**: 100% de cobertura en pruebas de léxico, sintáctico, modo pánico, detección de anomalías y runtime.
 
 ---
 
@@ -14,10 +21,10 @@ Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Progr
 
 Para consultar los detalles técnicos, guías y registros de evolución del proyecto, consulta los siguientes documentos:
 
-* 📄 **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones (incluyendo versión 2.0.0 - Entregable 1), nuevas características, correcciones y notas de lanzamiento.
+* 📄 **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones (v2.1.0 Intérprete LP y Rendimiento, v2.0.0 Entregable 1 Parser/AST, v1.0.0), nuevas características, correcciones y notas de lanzamiento.
 * 🔧 **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases (`Parser`, `ASTNode`, `Lexer`, `ErrorHandler`, `SymbolTable`, `FileConverter`), métodos y algoritmos.
 * 🏛️ **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico en 4 capas, diagramas Mermaid, árbol sintáctico y estrategia de contención de errores en 4 niveles.
-* 📖 **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para operar la interfaz gráfica de 5 pestañas, la versión CLI, Docker y consultar los reportes en `output/`.
+* 📖 **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para operar la interfaz gráfica de 6 pestañas, la versión CLI, Docker y consultar los reportes en `output/`.
 
 
 ---
@@ -124,7 +131,7 @@ return;
 
 ## 3. Compilación y Ejecución
 
-### 3.1 Aplicación Visual (GUI Windows con 5 Pestañas y AST)
+### 3.1 Aplicación Visual (GUI Windows con 6 Pestañas, AST y Consola de Ejecución)
 ```powershell
 cmake --build cmake-build-debug --target Compiladores
 .\cmake-build-debug\Compiladores.exe

@@ -5,6 +5,7 @@
 #include "../src/Parser.h"
 #include "../src/AST.h"
 #include "../src/ErrorHandler.h"
+#include "../src/Interpreter.h"
 
 using namespace std;
 
@@ -185,7 +186,6 @@ void testArreglosYDimensiones() {
 /* Test 7: Recuperacion de errores en modo panico (Panic Mode Recovery) */
 void testRecuperacionModoPanico() {
     cout << "=== Test 7: Recuperacion de Errores (Modo Panico) ===" << endl;
-    /* Error en la segunda linea (falta ';' en x = 1), pero y = 2; debe ser parseado */
     string codigo =
         "void main() {\n"
         "    int x, y;\n"
@@ -201,16 +201,76 @@ void testRecuperacionModoPanico() {
 
     assert(!parser.esAceptado());
     assert(parser.getErrores().size() >= 1);
-    /* Debe haber recuperado y construido el AST sin abortar la ejecucion */
     assert(ast != nullptr);
     assert(ast->funcionPrincipal != nullptr);
 
     cout << "[PASS] Modo panico sincronizo con exito y continuo el analisis sintactico." << endl;
 }
 
+/* Test 8: Ejecucion real con el Interprete de LP */
+void testEjecucionInterprete() {
+    cout << "=== Test 8: Ejecucion Completa con Interprete LP ===" << endl;
+    string codigo =
+        "func int duplicar(int n) {\n"
+        "    return n * 2;\n"
+        "}\n"
+        "void main() {\n"
+        "    int a, b, res;\n"
+        "    a = 15;\n"
+        "    b = 5;\n"
+        "    res = func duplicar(a + b);\n"
+        "    println(\"Resultado duplicado:\", res);\n"
+        "    return res;\n"
+        "}";
+
+    Lexer lexer(codigo);
+    lexer.analizar();
+    assert(lexer.getErrores().empty());
+
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+
+    Interpreter interprete(ast);
+    bool ok = interprete.ejecutar();
+
+    assert(ok);
+    assert(interprete.getCodigoRetorno() == 40);
+    string salida = interprete.getSalida();
+    assert(salida.find("40") != string::npos);
+
+    cout << "[PASS] Interprete ejecuto el programa correctamente: " << salida;
+    cout << "[INFO] Retorno: " << interprete.getCodigoRetorno() << " en " << interprete.getTiempoMs() << " ms." << endl;
+}
+
+/* Test 9: Manejo seguro de division por cero en runtime */
+void testErrorRuntimeDivisionPorCero() {
+    cout << "=== Test 9: Manejo Seguro de Division por Cero en Runtime ===" << endl;
+    string codigo =
+        "void main() {\n"
+        "    int a, b, c;\n"
+        "    a = 10;\n"
+        "    b = 0;\n"
+        "    c = a / b;\n"
+        "}";
+
+    Lexer lexer(codigo);
+    lexer.analizar();
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+
+    Interpreter interprete(ast);
+    bool ok = interprete.ejecutar();
+
+    assert(!ok);
+    assert(!interprete.getErrores().empty());
+    cout << "[PASS] Division por cero detectada y controlada de forma segura: " << interprete.getErrores()[0] << endl;
+}
+
 int main() {
     cout << "\n=======================================================" << endl;
-    cout << " SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO LP (ENTREGABLE 1)" << endl;
+    cout << " SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO E INTERPRETE LP" << endl;
     cout << "=======================================================\n" << endl;
 
     testProgramaValidoMinimo();
@@ -220,9 +280,11 @@ int main() {
     testEstructurasControl();
     testArreglosYDimensiones();
     testRecuperacionModoPanico();
+    testEjecucionInterprete();
+    testErrorRuntimeDivisionPorCero();
 
     cout << "\n=======================================================" << endl;
-    cout << " [100% PASS] TODAS LAS PRUEBAS SINTACTICAS COMPLETADAS EXITOSAMENTE" << endl;
+    cout << " [100% PASS] TODAS LAS PRUEBAS SINTACTICAS Y DE EJECUCION EXITOSAS" << endl;
     cout << "=======================================================\n" << endl;
 
     return 0;

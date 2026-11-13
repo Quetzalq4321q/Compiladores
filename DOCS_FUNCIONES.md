@@ -1,4 +1,4 @@
-# Documentación Técnica de Funciones y Módulos - Lenguaje LP
+﻿# Documentación Técnica de Funciones y Módulos - Lenguaje LP
 
 Esta guía técnica describe en detalle la arquitectura del código, clases, métodos, enumeraciones y funciones del analizador léxico para el lenguaje **LP (Lenguaje de Programación)** desarrollado en C++20.
 
@@ -382,3 +382,48 @@ Implementa el analizador sintáctico por descenso recursivo puro para la gramát
   * `parseExpresion()`, `parseExpresionO()`, `parseExpresionY()`, `parseExpresionNo()`
   * `parseExpresionComp()`, `parseExpresionAditiva()`, `parseExpresionMult()`, `parseTerminoExpr()`
   * `parseRetorno()`, `parseLectura()`, `parseEscritura()`, `parseSeleccion()`, `parseMientras()`.
+
+---
+
+## 9. MÃ³dulo del IntÃ©rprete y Motor de EjecuciÃ³n (Interpreter.h / Interpreter.cpp)
+
+Implementa el motor de evaluaciÃ³n y ejecuciÃ³n en tiempo real que recorre y computa directamente el Ãrbol de Sintaxis Abstracta (AST) generado por el Parser.
+
+### 9.1 EnumeraciÃ³n RuntimeType
+Define los tipos de datos manejados en tiempo de ejecuciÃ³n:
+* RT_VOID: Ausencia de valor o retorno de procedimiento.
+* RT_INT: Entero con signo de 64 bits (int64_t).
+* RT_FLOAT: NÃºmero decimal de doble precisiÃ³n (double).
+* RT_STRING: Cadena de texto (std::string).
+* RT_BOOL: Booleano lÃ³gico (ool).
+* RT_ARRAY: Vector multidimensional de RuntimeValue.
+
+### 9.2 Estructura RuntimeValue
+Encapsula valores evaluados en tiempo de ejecuciÃ³n:
+* RuntimeType tipo: ClasificaciÃ³n del valor.
+* int64_t vInt, double vFloat, std::string vString, ool vBool: Almacenamiento directo segÃºn tipo.
+* std::vector<RuntimeValue> arreglo: Contenedor para matrices y vectores.
+* MÃ©todos:
+  * std::string asString() const: RepresentaciÃ³n textual legible para salida por consola (println).
+  * ool asBool() const: CoerciÃ³n booleana para condiciones de if y while.
+  * double asFloat() const: CoerciÃ³n numÃ©rica para aritmÃ©tica mixta int/float.
+
+### 9.3 Clase Environment (Entornos y Alcances)
+Administra la tabla de variables y funciones en tiempo de ejecuciÃ³n:
+* std::shared_ptr<Environment> parent: Puntero al entorno padre (encadenamiento lÃ©xico / scope chain).
+* std::unordered_map<std::string, RuntimeValue> variables: Almacenamiento asociativo O(1) de variables locales.
+* oid definir(const std::string& nombre, const RuntimeValue& valor): Declara una variable en el alcance actual.
+* ool asignar(const std::string& nombre, const RuntimeValue& valor): Asigna valor a una variable existente en el Ã¡mbito local o en ancestros.
+* RuntimeValue obtener(const std::string& nombre): Recupera el valor asociado al identificador.
+
+### 9.4 Clase Interpreter (Motor de EvaluaciÃ³n AST)
+* **explicit Interpreter(std::shared_ptr<ProgramNode> raiz)**: Inicializa el intÃ©rprete con la raÃ­z del AST.
+* **ool ejecutar()**: Registra funciones declaradas, inicializa el entorno de ejecuciÃ³n, invoca main() y evalÃºa comandos.
+* **const std::string& getSalidaConsola() const**: Devuelve la salida acumulada por las sentencias println(...).
+* **const std::vector<std::string>& getErroresRuntime() const**: Devuelve los errores detectados en tiempo de ejecuciÃ³n.
+* **double getTiempoEjecucionMs() const**: Devuelve la duraciÃ³n de la ejecuciÃ³n en milisegundos con resoluciÃ³n de microsegundos (std::chrono::high_resolution_clock).
+* **int64_t getCodigoRetorno() const**: Retorna el cÃ³digo numÃ©rico producido por la funciÃ³n main().
+* **Protecciones y ContenciÃ³n en Runtime**:
+  * PrevenciÃ³n de bucles infinitos: LÃ­mite de 500,000 pasos de ejecuciÃ³n con interrupciÃ³n controlada.
+  * Control de divisiÃ³n por cero en operadores / y %.
+  * ValidaciÃ³n de lÃ­mites de dimensiones en asignaciones de arreglos.

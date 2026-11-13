@@ -1,4 +1,4 @@
-# Arquitectura del Sistema - Analizador Léxico LP
+﻿# Arquitectura del Sistema - Analizador Léxico LP
 
 Este documento describe la arquitectura de software, los modelos de autómatas finitos deterministas (AFD), los flujos de datos y los principios de diseño aplicados en el desarrollo del compilador para el lenguaje **LP (Lenguaje de Programación)**.
 
@@ -33,16 +33,27 @@ flowchart TD
         L --> O["Estado: Aceptado vs Rechazado"]
     end
 
-    subgraph Presentacion["Capa 4: Presentación y Salida"]
+    subgraph Ejecucion["Capa 4: Motor de Ejecución en Tiempo Real (Intérprete LP)"]
+        M --> INTERP["Interpreter (Evaluador de AST)"]
+        INTERP <--> ENV["Environment (Alcances y Variables O(1))"]
+        INTERP --> OUT_CONSOLE["Salida de Consola (println)"]
+        INTERP --> RET_CODE["Código de Retorno y Cronómetro (ms)"]
+        INTERP --> RUNTIME_ERR["Contención Errores Runtime (Div/0, Bucles)"]
+    end
+
+    subgraph Presentacion["Capa 5: Presentación y Salida"]
         J --> P["Secuencia y Tabla de Tokens"]
-        I --> Q["Tabla de Símbolos"]
+        I --> Q["Tabla de Símbolos (Hash O(1))"]
         M --> R["Renderizador Visual de AST"]
         K & N --> S["Diagnóstico Integral Unificado"]
-        P & Q & R & S --> T["GUI WinAPI (5 Pestañas + Banner)"]
+        OUT_CONSOLE & RET_CODE --> EXEC_UI["Consola Terminal Oscura (Pestaña 6)"]
+        K & N & RUNTIME_ERR --> S["Diagnóstico Integral Unificado"]
+        P & Q & R & S & EXEC_UI --> T["GUI WinAPI v6 Moderna (6 Pestañas + Barra Acciones)"]
         P --> U["output/tokens.txt"]
         Q --> V["output/tabla_simbolos.txt"]
         R --> W["output/ast.txt"]
         S --> X["output/errores.txt"]
+        OUT_CONSOLE --> Y["output/ejecucion.txt"]
     end
 ```
 

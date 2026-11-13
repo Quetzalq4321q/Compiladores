@@ -1,4 +1,4 @@
-# Manual de Usuario - Analizador Léxico para Lenguaje LP
+﻿# Manual de Usuario - Analizador Léxico para Lenguaje LP
 
 Bienvenido al manual de uso del **Analizador Léxico para el Lenguaje LP (Lenguaje de Programación)**. Esta guía está diseñada para que evaluadores, docentes y estudiantes puedan operar todas las funciones del compilador con facilidad.
 
@@ -300,3 +300,12 @@ Este script realiza automáticamente:
 4. Empaquetado de artefactos en `dist/Compiladores-v1.0.0-windows-x64.zip`.
 5. Creación del tag Git `v1.0.0` y subida a GitHub.
 6. Publicación del release oficial con notas de versión mediante GitHub CLI.
+
+### 3.5 PestaÃ±a: Consola de EjecuciÃ³n en Tiempo Real
+* **Consola terminal oscura**: Fondo negro/antracita (RGB(20, 24, 30)) con texto verde terminal (RGB(50, 255, 140)).
+* **BotÃ³n "[ â–¶ Ejecutar LP ]"**: Analiza la sintaxis del cÃ³digo fuente y, si no tiene errores, procede a evaluar las sentencias e invocar la funciÃ³n main() inmediatamente.
+* **Muestra en vivo**:
+  * Todo el texto emitido por llamadas a println(...).
+  * CÃ³digo de retorno del programa LP (ej. [âœ“] Fin de ejecucion (Retorno: 0)).
+  * CronÃ³metro de alta precisiÃ³n indicando el tiempo exacto de ejecuciÃ³n en milisegundos.
+  * Captura de excepciones en runtime (por ejemplo, advertencias claras si ocurre una divisiÃ³n por cero o un desbordamiento de pasos).

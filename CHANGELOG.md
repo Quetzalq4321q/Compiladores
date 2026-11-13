@@ -1,8 +1,63 @@
-# Changelog - Compiladores LP
+﻿# Changelog - Compiladores LP
 
 Todos los cambios notables en el proyecto **Compiladores (Lenguaje LP)** están documentados en este archivo.
 
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
+
+---
+
+## [2.1.0] - 2026-11-12
+
+### Motor de Ejecución en Tiempo Real (Intérprete LP), Optimización Algorítmica O(1), Estilos Visuales Modernos WinAPI v6 y Enlace Estático de Runtime
+
+Esta versión resuelve las observaciones de rendimiento, funcionalidad y portabilidad:
+1. **Falta de funcionalidad de ejecución**: El compilador ahora no solo analiza la sintaxis, sino que ejecuta los programas LP en memoria mediante un intérprete AST en tiempo real.
+2. **Errores de librerías/DLLs al ejecutar**: Se configuró enlace estático completo (-static-libgcc -static-libstdc++) y bundling de libwinpthread-1.dll, garantizando que los binarios se ejecuten sin errores de librerías faltantes en cualquier sistema Windows.
+3. **Eficiencia algorítmica**: La tabla de símbolos ahora opera en tiempo constante amortizado O(1) gracias a una tabla hash interna (std::unordered_map), optimizando análisis masivos.
+4. **Modernización de la interfaz**: Se incorporó el manifiesto de controles comunes de Windows v6.0 (estilos nativos de Windows 10/11), 6 pestañas interactivas, una consola terminal de ejecución integrada y botones de acción rápida en la barra superior.
+
+### Añadido
+* **Motor de Ejecución e Intérprete AST (Interpreter.h / Interpreter.cpp)**:
+  * Ejecución directa del Árbol de Sintaxis Abstracta (AST) generado por el Parser.
+  * Estructura polimórfica RuntimeValue con soporte para tipos primitivos (int, loat, string, ool, oid) y arreglos multidimensionales.
+  * Gestión de entornos léxicos (Environment) con soporte para variables locales, parámetros y encadenamiento de alcances (scope chain).
+  * Evaluación de expresiones binarias y unarias con semántica de tipos y coerción segura.
+  * Invocación de funciones (unc) con paso de argumentos por valor y valor de retorno.
+  * Control de flujo para sentencias condicionales if/else y bucles de repetición while.
+  * Captura de salida para sentencias println(...) en un búfer de consola.
+  * Manejo seguro de errores en tiempo de ejecución:
+    * Detección de división por cero con mensaje explicativo e interrupción controlada.
+    * Límite de pasos de ejecución (maxSteps = 500,000) para prevenir congelamientos por bucles infinitos.
+  * Medición de latencia de ejecución en microsegundos (getTiempoEjecucionMs()).
+* **Pestaña 6 en GUI: Consola de Ejecución**:
+  * Control de edición con fondo oscuro de terminal (RGB(20, 24, 30)) y texto verde fósforo (RGB(50, 255, 140)).
+  * Salida en tiempo real de println(...), valor de retorno y tiempo de ejecución en milisegundos.
+* **Barra de Acciones Rápidas en GUI**:
+  * Botón [ ▶ Ejecutar LP ] (IDC_BTN_EJECUTAR): Analiza, valida y ejecuta inmediatamente el código LP.
+  * Botón [ 📝 Ejemplo OK ] (IDC_BTN_EJ_VALIDO): Carga un programa formal válido de demostración.
+  * Botón [ ⚠️ Ejemplo Error ] (IDC_BTN_EJ_ERROR): Carga un ejemplo con errores sintácticos para validar el modo pánico.
+  * Botón [ 🧹 Limpiar ] (IDC_BTN_LIMPIAR): Limpia el editor y reinicia los paneles.
+* **Manifiesto de Controles Comunes Modernos (es/compiler.manifest)**:
+  * Integración de Microsoft.Windows.Common-Controls versión 6.0.0.0 en el archivo de recursos es/resource.rc.
+  * Renders nativos estilo Windows 10/Windows 11 para pestañas, botones y cuadros de texto.
+* **Generación de Reporte de Ejecución**:
+  * Nuevo archivo generado en disco: output/ejecucion.txt con la salida capturada de la consola y métricas de ejecución.
+* **Pruebas de Intérprete en 	est_parser.cpp**:
+  * 	estEjecucionInterprete(): Valida invocación de funciones, control de flujo y retorno de valor.
+  * 	estErrorRuntimeDivisionPorCero(): Valida contención segura de excepciones aritméticas.
+
+### Optimizado
+* **Tabla de Símbolos (SymbolTable.h / SymbolTable.cpp)**:
+  * Incorporación de std::unordered_map<std::string, int> mapaIndices.
+  * Búsquedas e inserciones pasaron de O(N) a O(1) amortizado.
+* **Compilación y Rendimiento**:
+  * Activación de bandera de optimización -O3 en CMakeLists.txt.
+  * Pre-reserva de memoria (eserve()) en vectores de tokens y errores.
+
+### Corregido
+* **Falta de Librerías / DLLs de Runtime en Windows**:
+  * Configuración de -static-libgcc -static-libstdc++ en CMakeLists.txt, eliminando las dependencias externas de libstdc++-6.dll y libgcc_s_seh-1.dll.
+  * Copia automática de libwinpthread-1.dll en la carpeta de compilación (cmake-build-debug/) y en los paquetes portables de distribución (dist/), permitiendo ejecutar los binarios de inmediato sin necesidad de instalar entornos MinGW.
 
 ---
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdlib>
+#include <iomanip>
 
 #include "Lexer.h"
 #include "Token.h"
@@ -11,6 +12,7 @@
 #include "FileConverter.h"
 #include "AST.h"
 #include "Parser.h"
+#include "Interpreter.h"
 
 using namespace std;
 
@@ -29,7 +31,7 @@ void mostrarBanner() {
                           |_|       [ Lenguaje de Programacion - C++20 ]         
     ===================================================================
     )" << "\033[0m" << endl;
-    cout << "\033[1;32m    [< / >] Analizador Lexico, Sintactico (Descenso Recursivo) y Arbol AST\033[0m" << endl;
+    cout << "\033[1;32m    [< / >] Lexico, Sintactico (Descenso Recursivo), AST e Interprete LP\033[0m" << endl;
     cout << "    -------------------------------------------------------------------\n" << endl;
 }
 
@@ -49,18 +51,22 @@ int main(int argc, char* argv[]) {
 
     string rutaArchivo = "";
     bool modoPruebas = false;
+    bool soloAnalisis = false;
 
     for (int i = 1; i < argc; ++i) {
         string arg = argv[i];
         if (arg == "--test" || arg == "-t") {
             modoPruebas = true;
+        } else if (arg == "--no-run") {
+            soloAnalisis = true;
         } else if (arg == "--help" || arg == "-h") {
             cout << "Uso: compilador_lp [opciones] [archivo_fuente]\n" << endl;
             cout << "Opciones:" << endl;
             cout << "  -h, --help    Muestra esta ayuda" << endl;
             cout << "  -t, --test    Ejecuta las pruebas unitarias incorporadas" << endl;
+            cout << "  --no-run      Solo compila y valida sintaxis sin ejecutar" << endl;
             cout << "\nFormatos soportados: .lp, .txt, .docx, .pdf" << endl;
-            cout << "Por defecto analiza 'input/ejemplo.lp' si no se especifica archivo.\n" << endl;
+            cout << "Por defecto procesa 'input/ejemplo.lp' si no se especifica archivo.\n" << endl;
             return 0;
         } else if (rutaArchivo.empty()) {
             rutaArchivo = arg;
@@ -70,31 +76,32 @@ int main(int argc, char* argv[]) {
     if (modoPruebas) {
         cout << "\033[1;33m[*] Ejecutando suite de pruebas unitarias integradas...\033[0m\n" << endl;
         string codigoPrueba =
+            "func int doble(int x) {\n"
+            "    return x * 2;\n"
+            "}\n"
             "void main() {\n"
-            "int edad;\n"
-            "float promedio;\n"
-            "edad = 20;\n"
-            "promedio = 15.5;\n"
+            "    int edad;\n"
+            "    edad = 20;\n"
+            "    println(\"Edad:\", edad, \"Doble:\", func doble(edad));\n"
             "}";
 
         Lexer lex(codigoPrueba);
         lex.analizar();
 
-        cout << lex.getSalidaPorLineas() << endl;
-
         Parser parser(lex.getTokens());
         auto ast = parser.parsear();
 
         if (lex.getErrores().empty() && parser.esAceptado()) {
-            cout << "\n\033[1;32m[PASS] Programa valido aceptado exitosamente por el Parser.\033[0m" << endl;
-            if (ast) {
-                cout << "\n" << ast->toTreeString() << endl;
+            cout << "\033[1;32m[PASS] Programa valido aceptado exitosamente por el Parser.\033[0m" << endl;
+            Interpreter interp(ast);
+            if (interp.ejecutar()) {
+                cout << "\033[1;32m[PASS] Interprete ejecuto el programa correctamente:\033[0m" << endl;
+                cout << interp.getSalida() << endl;
+                return 0;
             }
-            return 0;
-        } else {
-            cerr << "\033[1;31m[FAIL] Se detectaron errores inesperados en el programa de prueba.\033[0m" << endl;
-            return 1;
         }
+        cerr << "\033[1;31m[FAIL] Fallo en la prueba unitaria.\033[0m" << endl;
+        return 1;
     }
 
     /* Si no se paso ningun archivo, buscar input/ejemplo.lp o usar codigo por defecto */
@@ -105,15 +112,18 @@ int main(int argc, char* argv[]) {
             rutaArchivo = "input/ejemplo.lp";
             cout << "[INFO] Ningun archivo especificado. Usando archivo por defecto: " << rutaArchivo << "\n" << endl;
         } else {
-            cout << "[INFO] Usando programa fuente de ejemplo oficial integrado (Seccion 12):\n" << endl;
+            cout << "[INFO] Usando programa fuente de ejemplo oficial integrado:\n" << endl;
             fuente =
                 "void main() {\n"
-                "int edad = 20;\n"
-                "float promedio = 15.5;\n"
-                "if (edad >= 18 && edad <= 60) {\n"
-                "println(\"Edad valida\");\n"
-                "}\n"
-                "return;\n"
+                "    int edad;\n"
+                "    float promedio;\n"
+                "    edad = 20;\n"
+                "    promedio = 15.5;\n"
+                "    if (edad >= 18 && edad <= 60) {\n"
+                "        println(\"Edad valida:\", edad);\n"
+                "    }\n"
+                "    println(\"Promedio:\", promedio);\n"
+                "    return 0;\n"
                 "}";
         }
     }
@@ -185,15 +195,48 @@ int main(int argc, char* argv[]) {
         cout << "\033[1;31m" << strSintactico << "\033[0m" << endl;
     }
 
+    string strEjecucion = "";
+    if (sintaxisValida && errores.empty() && !soloAnalisis) {
+        cout << "\033[1;36m===================================================================" << endl;
+        cout << " EJECUCION EN TIEMPO REAL (INTERPRETE DEL LENGUAJE LP)" << endl;
+        cout << "===================================================================\033[0m\n" << endl;
+
+        Interpreter interprete(ast);
+        bool exitoExec = interprete.ejecutar();
+        strEjecucion = interprete.getReporteEjecucion();
+
+        cout << "\033[1;32m[SALIDA POR CONSOLA]:\033[0m" << endl;
+        string salidaPura = interprete.getSalida();
+        if (salidaPura.empty()) {
+            cout << "(Sin llamadas a println)\n" << endl;
+        } else {
+            cout << salidaPura << endl;
+        }
+
+        if (exitoExec) {
+            cout << "\033[1;32m[✓] Fin de ejecucion exitoso (Retorno: " << interprete.getCodigoRetorno()
+                 << ", Tiempo: " << fixed << setprecision(3) << interprete.getTiempoMs() << " ms)\033[0m\n" << endl;
+        } else {
+            cerr << "\033[1;31m[!] Errores en tiempo de ejecucion detectados:\033[0m" << endl;
+            for (const auto& err : interprete.getErrores()) {
+                cerr << "  * " << err << endl;
+            }
+            cout << endl;
+        }
+    }
+
     /* Guardar archivos de salida */
-    cout << "\n[*] Guardando reportes en la carpeta output/..." << endl;
+    cout << "[*] Guardando reportes en la carpeta output/..." << endl;
     guardarReporte("output/tokens.txt", strTokens);
     guardarReporte("output/tabla_simbolos.txt", strTabla);
     guardarReporte("output/ast.txt", strAST);
     guardarReporte("output/errores.txt", strDiagCompleto);
+    if (!strEjecucion.empty()) {
+        guardarReporte("output/ejecucion.txt", strEjecucion);
+    }
 
     cout << "\n\033[1;32m===================================================================" << endl;
-    cout << " Analisis finalizado: Tokens, Simbolos, AST y Diagnostico generados." << endl;
+    cout << " Proceso finalizado con exito." << endl;
     cout << "===================================================================\033[0m\n" << endl;
 
     bool exitoTotal = errores.empty() && sintaxisValida;

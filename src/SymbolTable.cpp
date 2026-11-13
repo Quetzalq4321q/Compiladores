@@ -2,10 +2,11 @@
 
 using namespace std;
 
-/* Agrega un identificador si no existe y devuelve su posicion; si ya existe devuelve la existente */
+/* Agrega un identificador si no existe y devuelve su posicion en tiempo O(1) */
 int SymbolTable::agregar(const string& nombre, int linea) {
-    int posExistente = buscar(nombre);
-    if (posExistente != -1) {
+    auto it = mapaIndices.find(nombre);
+    if (it != mapaIndices.end()) {
+        int posExistente = it->second;
         entradas[posExistente].apariciones.push_back(linea);
         return posExistente;
     }
@@ -18,15 +19,15 @@ int SymbolTable::agregar(const string& nombre, int linea) {
     entrada.apariciones.push_back(linea);
 
     entradas.push_back(entrada);
+    mapaIndices[nombre] = nuevaPos;
     return nuevaPos;
 }
 
-/* Busca el identificador por nombre; retorna posicion o -1 */
+/* Busca el identificador por nombre en tiempo O(1); retorna posicion o -1 */
 int SymbolTable::buscar(const string& nombre) const {
-    for (size_t i = 0; i < entradas.size(); ++i) {
-        if (entradas[i].nombre == nombre) {
-            return static_cast<int>(i);
-        }
+    auto it = mapaIndices.find(nombre);
+    if (it != mapaIndices.end()) {
+        return it->second;
     }
     return -1;
 }
@@ -51,7 +52,8 @@ bool SymbolTable::vacia() const {
     return entradas.empty();
 }
 
-/* Reinicia la tabla de simbolos */
+/* Limpia la tabla y el indice */
 void SymbolTable::limpiar() {
     entradas.clear();
+    mapaIndices.clear();
 }
