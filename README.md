@@ -8,6 +8,7 @@
 
 Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Programación)**, correspondiente al **Entregable 1 (30%) de la fase de Análisis Sintáctico y Motor de Ejecución en Tiempo Real**. Incluye:
 * **Analizador sintáctico por descenso recursivo puro** y construcción del Árbol de Sintaxis Abstracta (AST).
+* **Árbol legible en Windows y consola**: ramas ASCII alineadas y literales Unicode visibles en la interfaz.
 * **Motor de Ejecución en Tiempo Real (Intérprete LP)**: Evalúa programas válidos directamente en memoria (variables, arreglos multidimensionales, operadores aritméticos/lógicos/relacionales, llamadas unc, condicionales if/else, bucles while, println y eturn).
 * **Tabla de Símbolos Optimizada**: Búsquedas e inserciones en tiempo constante amortizado O(1) mediante tabla hash std::unordered_map.
 * **Portabilidad Total Sin Errores de DLLs**: Enlace estático de runtime C++ (-static-libgcc -static-libstdc++) y bundling de libwinpthread-1.dll, eliminando cualquier error de librerías faltantes en Windows.

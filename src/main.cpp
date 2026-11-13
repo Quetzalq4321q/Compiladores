@@ -74,6 +74,23 @@ static string obtenerDirSalida() {
     return (cmake.good() ? raizProyecto : dirProyecto) + "output\\";
 }
 
+/* Convierte los reportes UTF-8 a Unicode para los controles nativos de Windows. */
+static wstring aUnicode(const string& texto) {
+    if (texto.empty()) return L"";
+    UINT pagina = CP_UTF8;
+    DWORD opciones = MB_ERR_INVALID_CHARS;
+    int tam = MultiByteToWideChar(pagina, opciones, texto.data(), static_cast<int>(texto.size()), nullptr, 0);
+    if (tam == 0) {
+        pagina = CP_ACP;
+        opciones = 0;
+        tam = MultiByteToWideChar(pagina, opciones, texto.data(), static_cast<int>(texto.size()), nullptr, 0);
+    }
+    if (tam == 0) return L"";
+    wstring resultado(tam, L'\0');
+    MultiByteToWideChar(pagina, opciones, texto.data(), static_cast<int>(texto.size()), resultado.data(), tam);
+    return resultado;
+}
+
 /* Setea texto en un control EDIT convirtiendo saltos de linea a formato Windows */
 static void setEditText(HWND hEdit, const string& texto) {
     string conv;
@@ -83,16 +100,20 @@ static void setEditText(HWND hEdit, const string& texto) {
         if (c == '\n') conv += "\r\n";
         else conv += c;
     }
-    SetWindowTextA(hEdit, conv.c_str());
+    wstring unicode = aUnicode(conv);
+    SetWindowTextW(hEdit, unicode.c_str());
 }
 
 /* Obtiene el texto actual del editor de entrada */
 static string obtenerTextoEditor() {
-    int len = GetWindowTextLengthA(hEditEntrada);
+    int len = GetWindowTextLengthW(hEditEntrada);
     if (len > 0) {
-        vector<char> buf(len + 1);
-        GetWindowTextA(hEditEntrada, buf.data(), len + 1);
-        return string(buf.data());
+        vector<wchar_t> buf(len + 1);
+        int leidos = GetWindowTextW(hEditEntrada, buf.data(), len + 1);
+        int tam = WideCharToMultiByte(CP_UTF8, 0, buf.data(), leidos, nullptr, 0, nullptr, nullptr);
+        string utf8(tam, '\0');
+        if (tam > 0) WideCharToMultiByte(CP_UTF8, 0, buf.data(), leidos, utf8.data(), tam, nullptr, nullptr);
+        return utf8;
     }
     if (!rutaArchivo.empty()) {
         string f = FileConverter::leer(rutaArchivo);

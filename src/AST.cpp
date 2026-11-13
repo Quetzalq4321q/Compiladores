@@ -4,11 +4,11 @@ using namespace std;
 
 /* Funciones auxiliares para formato de arbol */
 static string getRama(bool isLast) {
-    return isLast ? "└── " : "├── ";
+    return isLast ? "\\-- " : "+-- ";
 }
 
 static string getSubPrefix(const string& prefix, bool isLast) {
-    return prefix + (isLast ? "    " : "│   ");
+    return prefix + (isLast ? "    " : "|   ");
 }
 
 /* LiteralNode */
@@ -18,7 +18,7 @@ LiteralNode::LiteralNode(const string& valor, const string& tipoDato, int linea)
 string LiteralNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
     ss << prefix << getRama(isLast) << "Literal [" << tipoDato << "]: " << valor
-       << " (Línea " << linea << ")\n";
+       << " (Linea " << linea << ")\n";
     return ss.str();
 }
 
@@ -29,11 +29,11 @@ IdentifierNode::IdentifierNode(const string& nombre, int linea)
 string IdentifierNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
     ss << prefix << getRama(isLast) << "Identificador: " << nombre
-       << " (Línea " << linea << ")\n";
+       << " (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     for (size_t i = 0; i < indices.size(); ++i) {
         bool lastIndex = (i + 1 == indices.size());
-        ss << subPrefix << getRama(lastIndex) << "Índice [" << i << "]:\n";
+        ss << subPrefix << getRama(lastIndex) << "Indice [" << i << "]:\n";
         ss << indices[i]->toTreeString(getSubPrefix(subPrefix, lastIndex), true);
     }
     return ss.str();
@@ -46,7 +46,7 @@ BinaryOpNode::BinaryOpNode(const string& op, shared_ptr<ExprNode> izq, shared_pt
 string BinaryOpNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
     ss << prefix << getRama(isLast) << "Operador Binario: '" << op
-       << "' (Línea " << linea << ")\n";
+       << "' (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     if (izq) {
         ss << izq->toTreeString(subPrefix, der == nullptr);
@@ -64,7 +64,7 @@ UnaryOpNode::UnaryOpNode(const string& op, shared_ptr<ExprNode> operando, int li
 string UnaryOpNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
     ss << prefix << getRama(isLast) << "Operador Unario: '" << op
-       << "' (Línea " << linea << ")\n";
+       << "' (Linea " << linea << ")\n";
     if (operando) {
         ss << operando->toTreeString(getSubPrefix(prefix, isLast), true);
     }
@@ -78,7 +78,7 @@ FuncCallNode::FuncCallNode(const string& nombreFuncion, int linea)
 string FuncCallNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
     ss << prefix << getRama(isLast) << "Llamada: func " << nombreFuncion
-       << "() (Línea " << linea << ")\n";
+       << "() (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     for (size_t i = 0; i < argumentos.size(); ++i) {
         bool lastArg = (i + 1 == argumentos.size());
@@ -99,7 +99,7 @@ string VarDeclNode::toTreeString(const string& prefix, bool isLast) const {
         if (i > 0) ss << ", ";
         ss << nombres[i];
     }
-    ss << " (Línea " << linea << ")\n";
+    ss << " (Linea " << linea << ")\n";
     return ss.str();
 }
 
@@ -113,11 +113,12 @@ string AssignNode::toTreeString(const string& prefix, bool isLast) const {
     for (size_t i = 0; i < indices.size(); ++i) {
         ss << "[]";
     }
-    ss << " = ... (Línea " << linea << ")\n";
+    ss << " = ... (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     for (size_t i = 0; i < indices.size(); ++i) {
-        ss << subPrefix << getRama(false) << "Índice destino [" << i << "]:\n";
-        ss << indices[i]->toTreeString(getSubPrefix(subPrefix, false), true);
+        bool lastIndex = (i + 1 == indices.size() && !expresion);
+        ss << subPrefix << getRama(lastIndex) << "Indice destino [" << i << "]:\n";
+        ss << indices[i]->toTreeString(getSubPrefix(subPrefix, lastIndex), true);
     }
     if (expresion) {
         ss << expresion->toTreeString(subPrefix, true);
@@ -131,7 +132,7 @@ ScanfNode::ScanfNode(int linea)
 
 string ScanfNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Comando: scanf() (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Comando: scanf() (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     for (size_t i = 0; i < terminos.size(); ++i) {
         bool lastT = (i + 1 == terminos.size());
@@ -146,7 +147,7 @@ PrintlnNode::PrintlnNode(int linea)
 
 string PrintlnNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Comando: println() (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Comando: println() (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     for (size_t i = 0; i < terminos.size(); ++i) {
         bool lastT = (i + 1 == terminos.size());
@@ -161,7 +162,7 @@ IfNode::IfNode(shared_ptr<ExprNode> condicion, shared_ptr<ASTNode> bloqueSi, sha
 
 string IfNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Estructura: if (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Estructura: if (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     if (condicion) {
         ss << subPrefix << getRama(false) << "Condicion:\n";
@@ -184,7 +185,7 @@ WhileNode::WhileNode(shared_ptr<ExprNode> condicion, shared_ptr<ASTNode> bloque,
 
 string WhileNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Estructura: while (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Estructura: while (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
     if (condicion) {
         ss << subPrefix << getRama(false) << "Condicion:\n";
@@ -203,7 +204,7 @@ ReturnNode::ReturnNode(shared_ptr<ExprNode> expresion, int linea)
 
 string ReturnNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Comando: return (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Comando: return (Linea " << linea << ")\n";
     if (expresion) {
         ss << expresion->toTreeString(getSubPrefix(prefix, isLast), true);
     }
@@ -216,7 +217,7 @@ BlockNode::BlockNode(int linea)
 
 string BlockNode::toTreeString(const string& prefix, bool isLast) const {
     ostringstream ss;
-    ss << prefix << getRama(isLast) << "Bloque { ... } (Línea " << linea << ")\n";
+    ss << prefix << getRama(isLast) << "Bloque { ... } (Linea " << linea << ")\n";
     string subPrefix = getSubPrefix(prefix, isLast);
 
     size_t total = variables.size() + comandos.size();
@@ -244,7 +245,7 @@ string FunctionDeclNode::toTreeString(const string& prefix, bool isLast) const {
         if (i > 0) ss << ", ";
         ss << parametros[i].tipo << " " << parametros[i].nombre;
     }
-    ss << ") (Línea " << linea << ")\n";
+    ss << ") (Linea " << linea << ")\n";
     if (bloque) {
         ss << bloque->toTreeString(getSubPrefix(prefix, isLast), true);
     }

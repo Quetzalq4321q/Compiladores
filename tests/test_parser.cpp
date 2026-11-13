@@ -231,6 +231,12 @@ void testEjecucionInterprete() {
     auto ast = parser.parsear();
     assert(parser.esAceptado());
 
+    const string arbol = ast->toTreeString();
+    assert(arbol.find("+-- Funcion: int duplicar") != string::npos);
+    assert(arbol.find("\\-- Funcion: void main") != string::npos);
+    assert(arbol.find("|   \\--") != string::npos);
+    for (unsigned char c : arbol) assert(c < 128); // Apto para consola y controles ANSI.
+
     Interpreter interprete(ast);
     bool ok = interprete.ejecutar();
 
