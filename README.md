@@ -131,6 +131,16 @@ return;
 
 ## 3. Compilación y Ejecución
 
+### Paquete portable para Windows x64
+
+El archivo `dist/Compiladores-portable-windows-x64.zip` se genera con
+`./package_portable.ps1` después de compilar `Compiladores` y `compilador_lp`
+en `cmake-build-release-portable`. Extrae el ZIP completo en una carpeta con
+permisos de escritura. Usa `abrir_gui.bat` para la interfaz o
+`ejecutar_cli.bat` para la consola. Los reportes se escriben en `output/`.
+La lectura de PDF requiere Microsoft Word instalado.
+
+
 ### 3.1 Aplicación Visual (GUI Windows con 6 Pestañas, AST y Consola de Ejecución)
 ```powershell
 cmake --build cmake-build-debug --target Compiladores

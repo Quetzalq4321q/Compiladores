@@ -220,7 +220,9 @@ bool Interpreter::ejecutar() {
     } catch (const ReturnException& ret) {
         codigoRetorno = static_cast<int>(ret.valor.toInt());
     } catch (const exception& e) {
-        /* Error critico ya registrado */
+        if (erroresRuntime.empty()) reportarErrorRuntime(e.what(), 0);
+    } catch (...) {
+        if (erroresRuntime.empty()) reportarErrorRuntime("Fallo inesperado del interprete", 0);
     }
 
     auto fin = chrono::high_resolution_clock::now();

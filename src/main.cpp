@@ -72,6 +72,7 @@ static void setEditText(HWND hEdit, const string& texto) {
     string conv;
     conv.reserve(texto.size() * 2);
     for (char c : texto) {
+        if (c == '\r') continue;
         if (c == '\n') conv += "\r\n";
         else conv += c;
     }
@@ -179,7 +180,7 @@ static void ejecutarAnalisis(HWND hWnd) {
     }
 
     /* 5. Exportar a output/ */
-    string outDir = dirProyecto + "..\\output\\";
+    string outDir = dirProyecto + "output\\";
     guardarArchivo(outDir + "tokens.txt",        strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
     guardarArchivo(outDir + "ast.txt",            strAST);
@@ -257,7 +258,7 @@ static void ejecutarProgramaLP(HWND hWnd) {
     setEditText(hEditConsola, reporteExec);
 
     /* Exportar a disco */
-    string outDir = dirProyecto + "..\\output\\";
+    string outDir = dirProyecto + "output\\";
     guardarArchivo(outDir + "ejecucion.txt", reporteExec);
     guardarArchivo(outDir + "tokens.txt", strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);

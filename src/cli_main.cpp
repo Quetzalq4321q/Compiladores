@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdlib>
 #include <iomanip>
+#include <filesystem>
 
 #include "Lexer.h"
 #include "Token.h"
@@ -36,13 +37,19 @@ void mostrarBanner() {
 }
 
 /* Guarda un archivo en disco asegurando creacion basica */
-void guardarReporte(const string& ruta, const string& contenido) {
+bool guardarReporte(const string& ruta, const string& contenido) {
     ofstream f(ruta);
     if (f) {
         f << contenido;
+        if (!f) {
+            cerr << "[ERROR] No se pudo completar el reporte: " << ruta << endl;
+            return false;
+        }
         cout << "\033[1;32m  [OK] Exportado: \033[0m" << ruta << endl;
+        return true;
     } else {
         cerr << "\033[1;31m  [ERROR] No se pudo guardar: \033[0m" << ruta << endl;
+        return false;
     }
 }
 
@@ -196,6 +203,7 @@ int main(int argc, char* argv[]) {
     }
 
     string strEjecucion = "";
+    bool ejecucionCorrecta = true;
     if (sintaxisValida && errores.empty() && !soloAnalisis) {
         cout << "\033[1;36m===================================================================" << endl;
         cout << " EJECUCION EN TIEMPO REAL (INTERPRETE DEL LENGUAJE LP)" << endl;
@@ -203,6 +211,7 @@ int main(int argc, char* argv[]) {
 
         Interpreter interprete(ast);
         bool exitoExec = interprete.ejecutar();
+        ejecucionCorrecta = exitoExec;
         strEjecucion = interprete.getReporteEjecucion();
 
         cout << "\033[1;32m[SALIDA POR CONSOLA]:\033[0m" << endl;
@@ -227,18 +236,23 @@ int main(int argc, char* argv[]) {
 
     /* Guardar archivos de salida */
     cout << "[*] Guardando reportes en la carpeta output/..." << endl;
-    guardarReporte("output/tokens.txt", strTokens);
-    guardarReporte("output/tabla_simbolos.txt", strTabla);
-    guardarReporte("output/ast.txt", strAST);
-    guardarReporte("output/errores.txt", strDiagCompleto);
+    std::error_code errorDirectorio;
+    std::filesystem::create_directories("output", errorDirectorio);
+    if (errorDirectorio) {
+        cerr << "[ERROR] No se pudo crear output/: " << errorDirectorio.message() << endl;
+        return 3;
+    }
+    bool reportesGuardados = true;
+    reportesGuardados &= guardarReporte("output/tokens.txt", strTokens);
+    reportesGuardados &= guardarReporte("output/tabla_simbolos.txt", strTabla);
+    reportesGuardados &= guardarReporte("output/ast.txt", strAST);
+    reportesGuardados &= guardarReporte("output/errores.txt", strDiagCompleto);
     if (!strEjecucion.empty()) {
-        guardarReporte("output/ejecucion.txt", strEjecucion);
+        reportesGuardados &= guardarReporte("output/ejecucion.txt", strEjecucion);
     }
 
-    cout << "\n\033[1;32m===================================================================" << endl;
-    cout << " Proceso finalizado con exito." << endl;
-    cout << "===================================================================\033[0m\n" << endl;
-
-    bool exitoTotal = errores.empty() && sintaxisValida;
+    if (!reportesGuardados) return 3;
+    bool exitoTotal = errores.empty() && sintaxisValida && ejecucionCorrecta;
+    cout << "\n" << (exitoTotal ? "Proceso finalizado con exito." : "Proceso finalizado con errores.") << endl;
     return exitoTotal ? 0 : 2;
 }
