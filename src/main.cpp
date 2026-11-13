@@ -67,6 +67,13 @@ static string obtenerDirEjecutable() {
     return "";
 }
 
+/* En CLion guarda reportes en el proyecto; en el ZIP, junto al ejecutable. */
+static string obtenerDirSalida() {
+    string raizProyecto = dirProyecto + "..\\";
+    ifstream cmake(raizProyecto + "CMakeLists.txt");
+    return (cmake.good() ? raizProyecto : dirProyecto) + "output\\";
+}
+
 /* Setea texto en un control EDIT convirtiendo saltos de linea a formato Windows */
 static void setEditText(HWND hEdit, const string& texto) {
     string conv;
@@ -168,11 +175,11 @@ static void ejecutarAnalisis(HWND hWnd) {
 
     /* Actualizar banner de estado */
     if (programaAceptado) {
-        SetWindowTextA(hLabelStatus, "[✓] PROGRAMA ACEPTADO: 0 errores lexicos / 0 errores sintacticos. Listo para ejecutar con [▶ Ejecutar LP].");
+        SetWindowTextA(hLabelStatus, "[OK] PROGRAMA ACEPTADO: 0 errores lexicos / 0 errores sintacticos. Listo para [Ejecutar LP].");
         TabCtrl_SetCurSel(hTab, 4); /* Mostrar AST */
         mostrarPestana(4);
     } else {
-        string st = "[✗] PROGRAMA RECHAZADO (" + to_string(errLexicos.size()) + " err. lexicos, " +
+        string st = "[ERROR] PROGRAMA RECHAZADO (" + to_string(errLexicos.size()) + " err. lexicos, " +
                     to_string(errSintacticos.size()) + " err. sintacticos)";
         SetWindowTextA(hLabelStatus, st.c_str());
         TabCtrl_SetCurSel(hTab, 5); /* Mostrar Diagnostico */
@@ -180,7 +187,7 @@ static void ejecutarAnalisis(HWND hWnd) {
     }
 
     /* 5. Exportar a output/ */
-    string outDir = dirProyecto + "output\\";
+    string outDir = obtenerDirSalida();
     guardarArchivo(outDir + "tokens.txt",        strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
     guardarArchivo(outDir + "ast.txt",            strAST);
@@ -188,13 +195,13 @@ static void ejecutarAnalisis(HWND hWnd) {
 
     if (programaAceptado) {
         MessageBoxA(hWnd,
-            "[✓] PROGRAMA ACEPTADO\n\n"
+            "[OK] PROGRAMA ACEPTADO\n\n"
             "El programa fuente es 100% valido segun la gramatica formal LP.\n"
             "El arbol sintactico (AST) se genero correctamente.\n\n"
-            "Puedes presionar [▶ Ejecutar LP] para ejecutar el programa.",
+            "Puedes presionar [Ejecutar LP] para ejecutar el programa.",
             "Compilador LP - Analisis Exitoso", MB_ICONINFORMATION);
     } else {
-        string aviso = "[✗] PROGRAMA RECHAZADO\n\n"
+        string aviso = "[ERROR] PROGRAMA RECHAZADO\n\n"
                        "Fallas detectadas:\n"
                        "  - Errores Lexicos: " + to_string(errLexicos.size()) + "\n"
                        "  - Errores Sintacticos: " + to_string(errSintacticos.size()) + "\n\n"
@@ -243,7 +250,7 @@ static void ejecutarProgramaLP(HWND hWnd) {
 
     bool programaAceptado = errLexicos.empty() && sintaxisValida;
     if (!programaAceptado) {
-        SetWindowTextA(hLabelStatus, "[✗] ERROR DE COMPILACION: El programa no puede ejecutarse debido a errores.");
+        SetWindowTextA(hLabelStatus, "[ERROR] ERROR DE COMPILACION: El programa no puede ejecutarse debido a errores.");
         TabCtrl_SetCurSel(hTab, 5);
         mostrarPestana(5);
         MessageBoxA(hWnd, "No se puede ejecutar el programa.\n\nContiene errores de compilacion. Revise la pestana 'Diagnostico y Errores'.", "Error al Ejecutar", MB_ICONWARNING);
@@ -258,7 +265,7 @@ static void ejecutarProgramaLP(HWND hWnd) {
     setEditText(hEditConsola, reporteExec);
 
     /* Exportar a disco */
-    string outDir = dirProyecto + "output\\";
+    string outDir = obtenerDirSalida();
     guardarArchivo(outDir + "ejecucion.txt", reporteExec);
     guardarArchivo(outDir + "tokens.txt", strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
@@ -267,7 +274,7 @@ static void ejecutarProgramaLP(HWND hWnd) {
 
     if (exitoExec) {
         ostringstream st;
-        st << "[✓] EJECUTADO EXITOSAMENTE | Retorno: " << interprete.getCodigoRetorno()
+        st << "[OK] EJECUTADO EXITOSAMENTE | Retorno: " << interprete.getCodigoRetorno()
            << " | Tiempo: " << fixed << setprecision(3) << interprete.getTiempoMs() << " ms";
         SetWindowTextA(hLabelStatus, st.str().c_str());
     } else {
