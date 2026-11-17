@@ -1,311 +1,44 @@
-﻿# Manual de Usuario - Analizador Léxico para Lenguaje LP
+# Manual de usuario de Compiladores LP
 
-Bienvenido al manual de uso del **Analizador Léxico para el Lenguaje LP (Lenguaje de Programación)**. Esta guía está diseñada para que evaluadores, docentes y estudiantes puedan operar todas las funciones del compilador con facilidad.
+## Preparación
 
----
+En Windows x64, extraiga todo el ZIP portátil en una carpeta con permisos de escritura. Abra `abrir_gui.bat` para usar la interfaz o `ejecutar_cli.bat` para usar la consola. Los archivos `.lp` de `tests/` contienen ejemplos para la demostración.
 
-## 1. Requisitos del Sistema
+## Interfaz gráfica
 
-* **Sistema Operativo**: Windows 10 o Windows 11 (64-bit).
-* **Compilador (para desarrollo)**: MinGW-w64 (GCC 11+) o MSVC con soporte C++20.
-* **Herramientas de compilación**: CMake 3.20+ y Ninja (incluidos por defecto en CLion).
-* **PowerShell**: Versión 5.1 o superior (incluida de fábrica en Windows).
+La aplicación tiene seis pestañas: código fuente, consola de ejecución, secuencia de tokens, tabla de símbolos, AST gráfico y diagnóstico de errores.
 
----
+1. Escriba el programa LP en **Entrada (Código Fuente)** o use **Abrir Archivo**. Se admiten archivos `.lp`, `.txt`, `.docx` y `.pdf`; la conversión de PDF requiere Microsoft Word en Windows.
+2. Pulse **Analizar**. Si el programa es válido, se abrirá **AST Gráfico**. Si hay errores, se abrirá **Diagnóstico y Errores**.
+3. En **AST Gráfico**, las tarjetas representan funciones, bloques, sentencias, expresiones y valores. Las líneas muestran la relación entre nodos. Use la rueda para desplazarse verticalmente, `Ctrl` más rueda para ampliar o reducir y las barras de desplazamiento para recorrer el árbol.
+4. Pulse **Ejecutar LP** para interpretar un programa aceptado y consultar su salida en **Consola de Ejecución**.
 
-## 2. Inicio Rápido
+Los botones **Ejemplo OK** y **Ejemplo Error** cargan programas de demostración. **Limpiar** vacía el editor y los paneles. La representación gráfica no requiere instalar Graphviz.
 
-### Ejecutar la Aplicación Visual (GUI)
-1. Navega a la carpeta de compilación `cmake-build-debug/` o descarga el release empaquetado.
-2. Haz doble clic sobre `Compiladores.exe` o ejecútalo desde la terminal:
-   ```powershell
-   .\cmake-build-debug\Compiladores.exe
-   ```
-3. Se abrirá la ventana principal con 4 pestañas interactivas y un código de ejemplo cargado por defecto.
+## Archivos de salida
 
----
+La aplicación guarda reportes en `output/`. En el ZIP portátil esa carpeta está junto a los ejecutables; al compilar desde CLion se usa la carpeta `output/` del proyecto.
 
-## 3. Guía de Uso de la Interfaz Gráfica
+| Archivo | Contenido |
+| --- | --- |
+| `tokens.txt` | Secuencia y tabla de tokens. |
+| `tabla_simbolos.txt` | Identificadores registrados por el analizador léxico. |
+| `ast.svg` | Grafo vectorial del AST, abrible en un navegador o visor SVG. |
+| `ast.txt` | Árbol en texto para consulta rápida. |
+| `errores.txt` | Resultado de aceptación o rechazo y detalles de errores. |
+| `ejecucion.txt` | Salida y estado del intérprete cuando se ejecuta el programa. |
 
-La interfaz gráfica nativa está dividida en una barra de controles superior con indicador de estado y un área central organizada en cinco pestañas:
+## Consola
 
-```
-+-------------------------------------------------------------------------------------------------+
-| [ Abrir Archivo ]   [ Analizar ]   ejemplo.lp (codigo)   [✓] PROGRAMA ACEPTADO: 0 err.          |
-+-------------------------------------------------------------------------------------------------+
-| [ Entrada (Codigo Fuente) ] [ Tokens ] [ Simbolos ] [ Arbol Sintactico (AST) ] [ Diagnostico ]  |
-|                                                                                                 |
-|  void main() {                                                                                  |
-|      int edad;                                                                                  |
-|      float promedio;                                                                            |
-|      edad = 20;                                                                                 |
-|      promedio = 15.5;                                                                           |
-|      if (edad >= 18 && edad <= 60) {                                                            |
-|          println("Edad valida");                                                                |
-|      }                                                                                          |
-|      return 0;                                                                                  |
-|  }                                                                                              |
-+-------------------------------------------------------------------------------------------------+
-```
+Desde una terminal situada en la carpeta del ZIP:
 
-### 3.1 Pestaña 1: Entrada (Código Fuente)
-* **Edición directa**: Puedes escribir, editar, pegar o borrar código en cualquier momento dentro del editor de texto.
-* **Botón "Abrir Archivo"**: Permite cargar archivos directamente desde tu disco duro.
-  * Formatos soportados: `.lp`, `.txt`, `.docx` (Microsoft Word) y `.pdf`.
-* **Protección contra archivos inválidos**:
-  * Si intentas abrir un archivo de imagen (`.png`, `.jpg`, `.bmp`, etc.), un ejecutable (`.exe`, `.dll`) o un archivo vacío, el sistema mostrará una advertencia clara indicando por qué no se puede procesar y no afectará el estado del compilador.
-* **Botón "Analizar"**: Ejecuta el análisis léxico y sintáctico completo sobre el texto visible en pantalla.
-
-### 3.2 Pestaña 2: Secuencia de Tokens
-Presenta:
-1. **Secuencia de Tokens por Línea**: La representación canónica de los tokens entre corchetes angulares respetando las líneas del código fuente.
-2. **Tabla Detallada de Tokens**: Número correlativo, token canónico, lexema, categoría formal LP y línea de código.
-
-### 3.3 Pestaña 3: Tabla de Símbolos
-Muestra todos los identificadores únicos encontrados con su posición única base 0, línea inicial y trazabilidad de apariciones.
-
-### 3.4 Pestaña 4: Árbol Sintáctico (AST)
-Al aceptar un programa o tras recuperarse de errores no críticos, muestra la estructura jerárquica del programa renderizada como un árbol visual UTF-8 con ramas (`├──`, `└──`, `│   `):
 ```text
-PROGRAMA LP
-└── Funcion: void main() (Línea 1)
-    └── Bloque { ... } (Línea 1)
-        ├── Decl Variable [int]: edad (Línea 2)
-        ├── Decl Variable [float]: promedio (Línea 3)
-        ├── Asignacion: edad = ... (Línea 4)
-        │   └── Literal [int]: 20 (Línea 4)
-        └── Asignacion: promedio = ... (Línea 5)
-            └── Literal [float]: 15.5 (Línea 5)
+compilador_lp.exe --no-run tests\entregable2_integral.lp
+compilador_lp.exe tests\entregable2_integral.lp
 ```
 
-### 3.5 Pestaña 5: Diagnóstico y Errores (Léxico y Sintáctico)
-Ofrece un reporte estructurado y unificado con:
-* **Fase 1 (Léxica)**: Conteo y detalle de caracteres no reconocidos o anomalías léxicas.
-* **Fase 2 (Sintáctica)**: Diagnóstico formal de aceptación (`[ESTADO]: PROGRAMA ACEPTADO`) o rechazo (`[ESTADO]: PROGRAMA RECHAZADO`), indicando línea, token encontrado y construcción esperada según la gramática formal LP.
+`--no-run` realiza el análisis y genera `ast.svg` sin ejecutar el programa. Si no se indica un archivo, la consola usa `input/ejemplo.lp`. El código de salida es 0 para proceso correcto, 1 para error de entrada, 2 para error del programa y 3 si falla la escritura de reportes.
 
----
+## Alcance de la lectura
 
-## 4. Archivos de Salida Automáticos
-
-Cada vez que ejecutas el análisis, se generan automáticamente archivos de texto plano dentro de la carpeta `output/`:
-
-* [`output/tokens.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tokens.txt): Contiene la secuencia formateada por líneas y la tabla clasificada completa.
-* [`output/tabla_simbolos.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tabla_simbolos.txt): Contiene la tabla de identificadores únicos con sus posiciones y apariciones.
-* [`output/ast.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/ast.txt): Contiene la representación visual del Árbol de Sintaxis Abstracta (AST).
-* [`output/errores.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/errores.txt): Contiene el diagnóstico integral unificado de las fases léxica y sintáctica.
-   <VOID> <MAIN> <(> <)> <{>
-   <INT> <ID,0> <=> <NUM_INT> <;>
-   <FLOAT> <ID,1> <=> <NUM_DEC> <;>
-   <IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)>
-   <{> <PRINTLN> <(> <TEXTO> <)> <;> <}>
-   <RETURN> <;> <}>
-   ```
-2. **Tabla Detallada de Tokens**: Tabla analítica con el desglose formal de cada componente:
-   * `#`: Número correlativo.
-   * `TOKEN`: Token asignado (ej. `<VOID>`, `<ID,0>`, `<=>`, `<NUM_INT>`, `<;>`).
-   * `LEXEMA`: Texto literal correspondiente en el código fuente.
-   * `CATEGORIA DEL TOKEN`: Clasificación formal (Palabra reservada, Identificador, Operador de Asignación, etc.).
-   * `LINEA`: Número de línea donde se encuentra ubicado.
-
-### 3.3 Pestaña 3: Tabla de Símbolos
-Muestra el catálogo de todos los identificadores únicos encontrados en el programa:
-* `POSICION`: Índice único asignado en base 0 (coincidente con `<ID,0>`, `<ID,1>`, etc.).
-* `IDENTIFICADOR`: Nombre de la variable o función declarada.
-* `LINEA INICIAL`: Primera línea donde fue detectado.
-* `APARICIONES`: Listado cronológico de todas las líneas donde se hace referencia al identificador (ej. `L2, L4, L4`).
-
-### 3.4 Pestaña 4: Errores Léxicos
-Si el código ingresado contiene caracteres no admitidos (como `@`, `$`), números con múltiples puntos (ej. `12.3.4`) o identificadores que inician con dígitos:
-* La aplicación alertará mediante un cuadro emergente indicando la cantidad de errores encontrados.
-* En esta pestaña podrás ver la línea exacta, el lexema causante y la explicación detallada de por qué es inválido para facilitar su corrección en el editor de entrada.
-
----
-
-## 4. Archivos de Salida Automáticos
-
-Cada vez que ejecutas el análisis, se generan automáticamente archivos de texto plano dentro de la carpeta `output/`:
-
-* [`output/tokens.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tokens.txt): Contiene la secuencia formateada por líneas y la tabla clasificada completa.
-* [`output/tabla_simbolos.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/tabla_simbolos.txt): Contiene la tabla de identificadores únicos con sus posiciones y apariciones.
-* [`output/errores.txt`](file:///c:/Users/User/CLionProjects/Compiladores/output/errores.txt): Contiene el reporte detallado de incidencias o la certificación de código 100% válido.
-
----
-
-## 5. Ejecución de Pruebas Unitarias Automatizadas
-
-El proyecto incluye una suite con 6 pruebas automatizadas que validan todos los casos límite y directivas del curso:
-
-Para ejecutarlas desde PowerShell:
-```powershell
-# Compilar el ejecutable de pruebas
-cmake --build cmake-build-debug --target test_lexer
-
-# Ejecutar las pruebas
-.\cmake-build-debug\test_lexer.exe
-```
-
-Salida esperada:
-```text
-========================================
- EJECUTANDO PRUEBAS UNITARIAS LEXER LP  
-========================================
-
-=== Test 1: Ejemplo Oficial LP (Seccion 12) ===
-[PASS] Secuencia de tokens coincide exactamente con la especificacion.
-[PASS] Tabla de simbolos: [0] = edad, [1] = promedio.
-[PASS] 0 errores lexicos en codigo valido.
-
-=== Test 2: Operadores Aritmeticos y Comentarios ===
-[PASS] Operadores +, *, %, = y comentarios procesados correctamente.
-
-=== Test 3: Operadores Relacionales (<COMP>) y Logicos ===
-[PASS] Comparadores >=, !=, ==, >, < producen <COMP>, && y ! reconocidos.
-
-=== Test 4: Identificadores Repetidos en Tabla de Simbolos ===
-[PASS] Identificadores repetidos reutilizan la posicion existente (edad=0, promedio=1).
-
-=== Test 5: Manejo de Errores Lexicos ===
-[PASS] Errores detectados para @, $, multiples puntos y digito al inicio de identificador.
-
-=== Test 6: Contencion de Errores de Entrada y Categorias de Tokens ===
-[PASS] Imagen detectada y rechazada con mensaje explicito.
-[PASS] Binario detectado y rechazado.
-[PASS] Valor muerto detectado y rechazado.
-[PASS] Categorias de la tabla oficial asignadas correctamente a cada token.
-
-=== Test 7: Anomalias de Escritura y Falta de Sentido Lexico (;;;;...) ===
-[PASS] Se leyeron exitosamente los 33 tokens <;> individuales.
-[PASS] Alerta generada para secuencia redundante de ';' (carece de sentido lexico/logico).
-[PASS] Alerta generada para operadores aritmeticos redundantes ('+++').
-[PASS] Alerta generada para operadores de asignacion anomala ('===').
-
-========================================
- TODAS LAS PRUEBAS PASARON EXITOSAMENTE 
-========================================
-```
-
-### 5.2 Pruebas Unitarias del Analizador Sintáctico (Entregable 1)
-```powershell
-# Compilar el ejecutable de pruebas sintacticas
-cmake --build cmake-build-debug --target test_parser
-
-# Ejecutar las pruebas sintacticas
-.\cmake-build-debug\test_parser.exe
-```
-
-Salida esperada:
-```text
-=======================================================
- SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO LP (ENTREGABLE 1)
-=======================================================
-
-=== Test 1: Programa Valido Minimo (Seccion 4.2) ===
-[PASS] Programa valido aceptado exitosamente por el Parser.
-[INFO] Arbol Sintactico generado:
-PROGRAMA LP
-└── Funcion: void main() (Línea 1)
-    └── Bloque { ... } (Línea 1)
-        ├── Decl Variable [int]: edad (Línea 2)
-        ├── Decl Variable [float]: promedio (Línea 3)
-        ├── Asignacion: edad = ... (Línea 4)
-        │   └── Literal [int]: 20 (Línea 4)
-        └── Asignacion: promedio = ... (Línea 5)
-            └── Literal [float]: 15.5 (Línea 5)
-
-=== Test 2: Programa Invalido por Falta de ';' (Seccion 4.3) ===
-[PASS] Error sintactico de falta de ';' detectado correctamente en linea 3.
-=== REPORTE DE ANALISIS SINTACTICO (LP) ===
-[ESTADO]: PROGRAMA RECHAZADO. Total de errores sintacticos: 1
-
-=== Test 3: Programa Invalido por Llave de Cierre Faltante ===
-[PASS] Rechazo correcto de bloque no cerrado.
-
-=== Test 4: Palabra Reservada 'func' y Declaracion/Llamada de Funciones ===
-[PASS] Declaracion e invocacion con 'func' analizadas correctamente en AST.
-
-=== Test 5: Estructuras de Control (while, if, else, println, scanf) ===
-[PASS] Sentencias de control, lectura y escritura validadas 100%.
-
-=== Test 6: Arreglos y Dimensiones ===
-[PASS] Arreglos multidimensionales analizados correctamente.
-
-=== Test 7: Recuperacion de Errores (Modo Panico) ===
-[PASS] Modo panico sincronizo con exito y continuo el analisis sintactico.
-
-=======================================================
- [100% PASS] TODAS LAS PRUEBAS SINTACTICAS COMPLETADAS EXITOSAMENTE
-=======================================================
-```
-
----
-
-## 6. Ejecución en Contenedores Docker (Multiplataforma)
-
-El analizador cuenta con una imagen Docker multi-etapa basada en Linux (GCC 13 y Debian slim) que compila y ejecuta tanto el analizador CLI como las pruebas unitarias:
-
-### 6.1 Construir la Imagen
-```bash
-docker build -t compiladores-lp .
-```
-
-### 6.2 Ejecutar el Analizador
-* **Procesar el ejemplo oficial y exportar resultados**:
-  ```bash
-  docker run --rm -v $(pwd)/output:/app/output compiladores-lp
-  ```
-* **Procesar un archivo local específico**:
-  ```bash
-  docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output compiladores-lp input/mi_programa.lp
-  ```
-
-### 6.3 Ejecutar Pruebas con Docker Compose
-```bash
-# Ejecutar compilador
-docker compose up compilador
-
-# Ejecutar suite de pruebas
-docker compose run --rm test
-```
-
----
-
-## 7. Icono e Identidad Visual del Compilador
-
-El proyecto cuenta con un icono oficial ubicado en `res/`:
-* **Vectorial SVG**: `res/compiler.svg` (apto para web y presentaciones en alta resolución).
-* **Imagen PNG**: `res/compiler.png` (256x256 píxeles).
-* **Icono Windows ICO**: `res/compiler.ico` (incrustado directamente en el ejecutable `Compiladores.exe` mediante `res/resource.rc`).
-
-### Simbología del Icono:
-* **Brackets de Código `< / >`**: Representan el análisis del código fuente y la transformación léxica hacia tokens.
-* **Engranaje Central**: Representa el motor de compilación y la tabla de símbolos interna.
-* **Colores**:
-  * *Verde Esmeralda (`<`)*: Entrada de código fuente válida.
-  * *Cian Eléctrico (`/`)*: AFD de análisis y transición de estados.
-  * *Ámbar (`>`)*: Tokens y reporte clasificado de salida.
-  * *Fondo Slate Oscuro*: Estabilidad y terminal moderna.
-
----
-
-## 8. Publicación y Empaquetado de Releases
-
-Si deseas generar un release completo empaquetado para distribución en GitHub:
-```powershell
-.\release.ps1 1.0.0
-```
-Este script realiza automáticamente:
-1. Verificación de herramientas (`git`, `gh`, `cmake`).
-2. Compilación del binario optimizado `Compiladores.exe` con su icono oficial.
-3. Construcción de la imagen Docker si el servicio Docker está disponible.
-4. Empaquetado de artefactos en `dist/Compiladores-v1.0.0-windows-x64.zip`.
-5. Creación del tag Git `v1.0.0` y subida a GitHub.
-6. Publicación del release oficial con notas de versión mediante GitHub CLI.
-
-### 3.5 PestaÃ±a: Consola de EjecuciÃ³n en Tiempo Real
-* **Consola terminal oscura**: Fondo negro/antracita (RGB(20, 24, 30)) con texto verde terminal (RGB(50, 255, 140)).
-* **BotÃ³n "[ â–¶ Ejecutar LP ]"**: Analiza la sintaxis del cÃ³digo fuente y, si no tiene errores, procede a evaluar las sentencias e invocar la funciÃ³n main() inmediatamente.
-* **Muestra en vivo**:
-  * Todo el texto emitido por llamadas a println(...).
-  * CÃ³digo de retorno del programa LP (ej. [âœ“] Fin de ejecucion (Retorno: 0)).
-  * CronÃ³metro de alta precisiÃ³n indicando el tiempo exacto de ejecuciÃ³n en milisegundos.
-  * Captura de excepciones en runtime (por ejemplo, advertencias claras si ocurre una divisiÃ³n por cero o un desbordamiento de pasos).
+El analizador reconoce `scanf` y sus índices de arreglo. El intérprete actual asigna cero a los destinos de `scanf` y no solicita datos por teclado. Para revisar programas que usan lectura sin ejecutarlos, use `--no-run`.

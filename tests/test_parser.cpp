@@ -5,6 +5,7 @@
 #include "../src/Lexer.h"
 #include "../src/Parser.h"
 #include "../src/AST.h"
+#include "../src/ASTGraph.h"
 #include "../src/ErrorHandler.h"
 #include "../src/Interpreter.h"
 
@@ -377,6 +378,31 @@ void testMultiplesErroresSintacticos() {
     assert(parser.getReporteErrores().find("ESPERADO") != string::npos);
 }
 
+void testGrafoVisualDelAST() {
+    Lexer lexer("func int doble(int n) { return n * 2; } void main() { int a[2]; a[1] = func doble(3); if (a[1] > 0) { println(\"a<&\", a[1]); } return a[1]; }");
+    lexer.analizar();
+    assert(lexer.getErrores().empty());
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+    auto graph = ASTGraph::fromProgram(ast);
+    const auto& nodes = graph.vertices();
+    assert(nodes.size() > 25 && graph.width() > 0 && graph.height() > 0);
+    assert(nodes[0].label == "Programa LP" && nodes[0].children.size() == 2);
+    for (const auto& node : nodes) {
+        assert(node.x > 0 && node.y > 0);
+        for (size_t child : node.children) {
+            assert(child < nodes.size() && nodes[child].y > node.y);
+        }
+    }
+    const auto svg = graph.toSVG();
+    assert(svg.find("<svg xmlns=") != string::npos);
+    assert(svg.find("Llamada doble") != string::npos);
+    assert(svg.find("Indice destino 1") != string::npos);
+    assert(svg.find("a&lt;&amp;") != string::npos);
+    assert(svg.find("<path d=") != string::npos);
+}
+
 int main() {
     cout << "\n=======================================================" << endl;
     cout << " SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO E INTERPRETE LP" << endl;
@@ -396,6 +422,7 @@ int main() {
     testPrecedenciaLogicaYAsociatividad();
     testLlamadaCombinadaEnExpresion();
     testMultiplesErroresSintacticos();
+    testGrafoVisualDelAST();
 
     cout << "\n=======================================================" << endl;
     cout << " [PASS] TODAS LAS PRUEBAS SINTACTICAS Y DE EJECUCION EXITOSAS" << endl;

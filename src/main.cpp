@@ -15,6 +15,8 @@
 #include "FileConverter.h"
 #include "ErrorHandler.h"
 #include "AST.h"
+#include "ASTGraph.h"
+#include "ASTGraphView.h"
 #include "Parser.h"
 #include "Interpreter.h"
 
@@ -34,7 +36,7 @@ using namespace std;
 #define IDC_EDIT_TOKENS     110
 #define IDC_EDIT_TABLA      111
 #define IDC_EDIT_ERRORES    112
-#define IDC_EDIT_AST        113
+#define IDC_AST_GRAPH       113
 #define IDC_EDIT_CONSOLA    114
 
 /* Handles de controles de la ventana */
@@ -43,7 +45,7 @@ HWND hEditEntrada;
 HWND hEditConsola;
 HWND hEditTokens;
 HWND hEditTabla;
-HWND hEditAST;
+HWND hAstGraph;
 HWND hEditErrores;
 HWND hBtnAbrir;
 HWND hBtnAnalizar;
@@ -132,14 +134,18 @@ static void mostrarPestana(int idx) {
     ShowWindow(hEditConsola, SW_HIDE);
     ShowWindow(hEditTokens,  SW_HIDE);
     ShowWindow(hEditTabla,   SW_HIDE);
-    ShowWindow(hEditAST,     SW_HIDE);
+    ShowWindow(hAstGraph,    SW_HIDE);
     ShowWindow(hEditErrores, SW_HIDE);
     switch (idx) {
         case 0: ShowWindow(hEditEntrada, SW_SHOW); break;
         case 1: ShowWindow(hEditConsola, SW_SHOW); break;
         case 2: ShowWindow(hEditTokens,  SW_SHOW); break;
         case 3: ShowWindow(hEditTabla,   SW_SHOW); break;
-        case 4: ShowWindow(hEditAST,     SW_SHOW); break;
+        case 4:
+            ShowWindow(hAstGraph, SW_SHOW);
+            SetWindowPos(hAstGraph, HWND_TOP, 0, 0, 0, 0,
+                         SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            break;
         case 5: ShowWindow(hEditErrores, SW_SHOW); break;
     }
 }
@@ -185,12 +191,13 @@ static void ejecutarAnalisis(HWND hWnd) {
     string strTokens     = ErrorHandler::generarReporteTokens(tokens, lexer.getSalidaPorLineas());
     string strTabla      = ErrorHandler::generarReporteTablaSimbolos(tabla);
     string strAST        = ast ? ast->toTreeString() : "(AST no generado debido a errores sintacticos criticos)\r\n";
+    ASTGraph graph       = ASTGraph::fromProgram(ast);
     string strDiagnostico = ErrorHandler::generarReporteDiagnosticoCompleto(errLexicos, sintaxisValida, errSintacticos);
 
     /* 4. Actualizar vistas */
     setEditText(hEditTokens,  strTokens);
     setEditText(hEditTabla,   strTabla);
-    setEditText(hEditAST,     strAST);
+    ASTGraphView::setGraph(hAstGraph, graph);
     setEditText(hEditErrores, strDiagnostico);
 
     bool programaAceptado = errLexicos.empty() && sintaxisValida;
@@ -213,16 +220,10 @@ static void ejecutarAnalisis(HWND hWnd) {
     guardarArchivo(outDir + "tokens.txt",        strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
     guardarArchivo(outDir + "ast.txt",            strAST);
+    guardarArchivo(outDir + "ast.svg",            graph.toSVG());
     guardarArchivo(outDir + "errores.txt",        strDiagnostico);
 
-    if (programaAceptado) {
-        MessageBoxA(hWnd,
-            "[OK] PROGRAMA ACEPTADO\n\n"
-            "El programa fuente es 100% valido segun la gramatica formal LP.\n"
-            "El arbol sintactico (AST) se genero correctamente.\n\n"
-            "Puedes presionar [Ejecutar LP] para ejecutar el programa.",
-            "Compilador LP - Analisis Exitoso", MB_ICONINFORMATION);
-    } else {
+    if (!programaAceptado) {
         string aviso = "[ERROR] PROGRAMA RECHAZADO\n\n"
                        "Fallas detectadas:\n"
                        "  - Errores Lexicos: " + to_string(errLexicos.size()) + "\n"
@@ -263,11 +264,12 @@ static void ejecutarProgramaLP(HWND hWnd) {
     string strTokens = ErrorHandler::generarReporteTokens(tokens, lexer.getSalidaPorLineas());
     string strTabla = ErrorHandler::generarReporteTablaSimbolos(tabla);
     string strAST = ast ? ast->toTreeString() : "(AST no disponible)\r\n";
+    ASTGraph graph = ASTGraph::fromProgram(ast);
     string strDiag = ErrorHandler::generarReporteDiagnosticoCompleto(errLexicos, sintaxisValida, errSintacticos);
 
     setEditText(hEditTokens, strTokens);
     setEditText(hEditTabla, strTabla);
-    setEditText(hEditAST, strAST);
+    ASTGraphView::setGraph(hAstGraph, graph);
     setEditText(hEditErrores, strDiag);
 
     bool programaAceptado = errLexicos.empty() && sintaxisValida;
@@ -292,6 +294,7 @@ static void ejecutarProgramaLP(HWND hWnd) {
     guardarArchivo(outDir + "tokens.txt", strTokens);
     guardarArchivo(outDir + "tabla_simbolos.txt", strTabla);
     guardarArchivo(outDir + "ast.txt", strAST);
+    guardarArchivo(outDir + "ast.svg", graph.toSVG());
     guardarArchivo(outDir + "errores.txt", strDiag);
 
     if (exitoExec) {
@@ -350,7 +353,7 @@ static void redimensionarPaneles(HWND hWnd) {
     SetWindowPos(hEditConsola, NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditTokens,  NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditTabla,   NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
-    SetWindowPos(hEditAST,     NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
+    SetWindowPos(hAstGraph,    NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
     SetWindowPos(hEditErrores, NULL, m + eX, tabY + eY, eW, eH, SWP_NOZORDER);
 }
 
@@ -419,7 +422,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         TabCtrl_InsertItem(hTab, 2, &ti);
         ti.pszText = const_cast<char*>("Tabla de Simbolos");
         TabCtrl_InsertItem(hTab, 3, &ti);
-        ti.pszText = const_cast<char*>("Arbol Sintactico (AST)");
+        ti.pszText = const_cast<char*>("AST Grafico");
         TabCtrl_InsertItem(hTab, 4, &ti);
         ti.pszText = const_cast<char*>("Diagnostico y Errores");
         TabCtrl_InsertItem(hTab, 5, &ti);
@@ -458,10 +461,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         SendMessage(hEditTabla, WM_SETFONT, (WPARAM)hMono, TRUE);
         ShowWindow(hEditTabla, SW_HIDE);
 
-        hEditAST = CreateWindowA("EDIT", "",
-            estiloEdit, 0,0,0,0, hWnd, (HMENU)IDC_EDIT_AST, NULL, NULL);
-        SendMessage(hEditAST, WM_SETFONT, (WPARAM)hMono, TRUE);
-        ShowWindow(hEditAST, SW_HIDE);
+        hAstGraph = ASTGraphView::create(hWnd, IDC_AST_GRAPH);
+        ShowWindow(hAstGraph, SW_HIDE);
 
         hEditErrores = CreateWindowA("EDIT", "",
             estiloEdit, 0,0,0,0, hWnd, (HMENU)IDC_EDIT_ERRORES, NULL, NULL);
@@ -502,9 +503,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         setEditText(hEditTabla,
             "=== TABLA DE SIMBOLOS ===\r\n"
             "Presiona [Analizar] o [Ejecutar LP] para visualizar los identificadores.");
-        setEditText(hEditAST,
-            "=== ARBOL SINTACTICO ABSTRACTO (AST) ===\r\n"
-            "Presiona [Analizar] o [Ejecutar LP] para visualizar el arbol sintactico.");
         setEditText(hEditErrores,
             "=== DIAGNOSTICO INTEGRAL (LEXICO Y SINTACTICO) ===\r\n"
             "Presiona [Analizar] para verificar el diagnostico completo.");
@@ -623,7 +621,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             SetWindowTextA(hEditConsola, "");
             SetWindowTextA(hEditTokens, "");
             SetWindowTextA(hEditTabla, "");
-            SetWindowTextA(hEditAST, "");
+            ASTGraphView::setGraph(hAstGraph, ASTGraph());
             SetWindowTextA(hEditErrores, "");
             SetWindowTextA(hLabelFile, "(editor vacio)");
             SetWindowTextA(hLabelStatus, "[LISTO]: Editor despejado.");

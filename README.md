@@ -11,6 +11,8 @@ Analizador léxico y sintáctico para programas LP, con construcción de un árb
 | `src/SymbolTable.*` | Almacena los identificadores encontrados por el analizador léxico. |
 | `src/Parser.*` | Aplica la gramática por descenso recursivo, recupera errores y construye el AST. |
 | `src/AST.*` | Define los nodos del programa y su representación textual en árbol. |
+| `src/ASTGraph.*` | Transforma los nodos del AST en un grafo y exporta una imagen SVG. |
+| `src/ASTGraphView.*` | Dibuja el grafo en la interfaz de Windows con desplazamiento y ampliación. |
 | `src/ErrorHandler.*` | Valida la entrada y produce los reportes de tokens, símbolos y errores. |
 | `src/Interpreter.*` | Ejecuta el AST cuando el programa fue aceptado. |
 | `src/FileConverter.*` | Lee archivos de entrada admitidos por la aplicación. |
@@ -44,17 +46,19 @@ test_lexer
 test_parser
 ```
 
-En Windows, anteponer `build\` o la ruta real de compilación a cada ejecutable. `--no-run` analiza y genera reportes sin ejecutar el programa. Si no se indica un archivo, la consola busca `input/ejemplo.lp`. Los reportes se guardan en `output/` del directorio desde el que se inicia el ejecutable: `tokens.txt`, `tabla_simbolos.txt`, `ast.txt`, `errores.txt` y, al ejecutar, `ejecucion.txt`. La consola devuelve código 0 si todo fue correcto, 1 ante errores de entrada, 2 ante errores del programa y 3 si no pudo guardar reportes.
+En Windows, anteponer `build\` o la ruta real de compilación a cada ejecutable. `--no-run` analiza y genera reportes sin ejecutar el programa. Si no se indica un archivo, la consola busca `input/ejemplo.lp`. Los reportes se guardan en `output/` del directorio desde el que se inicia el ejecutable: `tokens.txt`, `tabla_simbolos.txt`, `ast.txt`, `ast.svg`, `errores.txt` y, al ejecutar, `ejecucion.txt`. La consola devuelve código 0 si todo fue correcto, 1 ante errores de entrada, 2 ante errores del programa y 3 si no pudo guardar reportes.
+
+En la interfaz de Windows, el botón **Analizar** abre la pestaña **AST Gráfico**. Los nodos y sus conexiones se dibujan de izquierda a derecha. La rueda desplaza verticalmente, `Ctrl` más rueda cambia la escala y las barras permiten recorrer el resto del árbol. La interfaz también guarda `output/ast.svg`, que puede abrirse en un navegador o visor SVG; `output/ast.txt` conserva una versión textual para inspección rápida. El grafo se genera sin instalar Graphviz ni otra dependencia externa.
 
 Para probar el ZIP portátil en Windows x64, extraerlo completo en una carpeta con permisos de escritura y abrir `abrir_gui.bat` o `ejecutar_cli.bat`. El paquete se genera después de compilar en modo Release:
 
 ```powershell
 cmake -S . -B cmake-build-release-portable -DCMAKE_BUILD_TYPE=Release
 cmake --build cmake-build-release-portable
-.\package_portable.ps1 -PackageName Compiladores-portable-windows-x64-entregable2
+.\package_portable.ps1 -PackageName Compiladores-portable-windows-x64-ast-grafico
 ```
 
-El resultado es `dist/Compiladores-portable-windows-x64-entregable2.zip`.
+El resultado es `dist/Compiladores-portable-windows-x64-ast-grafico.zip`.
 
 ## Sintaxis implementada
 
@@ -77,7 +81,7 @@ void main() {
 }
 ```
 
-`tests/entregable2_integral.lp` añade lectura, arreglo multidimensional, condicional, ciclo y operadores con distinta precedencia. Los archivos `tests/entregable2_invalido_*.lp` verifican rechazo y recuperación de errores. El reporte sintáctico incluye línea aproximada, token encontrado, construcción esperada y descripción. El AST se imprime como árbol de texto para evitar problemas visuales de un graficador externo.
+`tests/entregable2_integral.lp` añade lectura, arreglo multidimensional, condicional, ciclo y operadores con distinta precedencia. Los archivos `tests/entregable2_invalido_*.lp` verifican rechazo y recuperación de errores. El reporte sintáctico incluye línea aproximada, token encontrado, construcción esperada y descripción. El AST se muestra como grafo nativo en Windows y se exporta como SVG en todas las plataformas.
 
 ## Limitaciones conocidas
 

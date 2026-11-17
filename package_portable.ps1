@@ -64,7 +64,8 @@ COMPILADORES LP - VERSION PORTABLE PARA WINDOWS x64
 4. Para procesar otro archivo desde una terminal:
    ejecutar_cli.bat "ruta\a\programa.lp"
 
-Los reportes se guardan en output/. La conversion de PDF requiere Microsoft Word.
+Los reportes se guardan en output/, incluido ast.svg. La pestaña AST Grafico dibuja
+el arbol dentro de la aplicacion. La conversion de PDF requiere Microsoft Word.
 '@ | Set-Content (Join-Path $stage "LEEME_PORTABLE.txt") -Encoding UTF8
 
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal

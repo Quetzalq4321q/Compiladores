@@ -28,11 +28,13 @@ if (WIN32)
             src/FileConverter.cpp
             src/ErrorHandler.cpp
             src/AST.cpp
+            src/ASTGraph.cpp
+            src/ASTGraphView.cpp
             src/Parser.cpp
             src/Interpreter.cpp
             res/resource.rc
     )
-    target_link_libraries(Compiladores comctl32 comdlg32 ole32)
+    target_link_libraries(Compiladores comctl32 comdlg32 ole32 gdi32)
 endif()
 
 # 2. Aplicacion de linea de comandos CLI (Multiplataforma: Linux / Docker / Windows)
@@ -44,6 +46,7 @@ add_executable(compilador_lp
         src/FileConverter.cpp
         src/ErrorHandler.cpp
         src/AST.cpp
+        src/ASTGraph.cpp
         src/Parser.cpp
         src/Interpreter.cpp
 )
@@ -65,6 +68,7 @@ add_executable(test_parser
         src/SymbolTable.cpp
         src/ErrorHandler.cpp
         src/AST.cpp
+        src/ASTGraph.cpp
         src/Parser.cpp
         src/Interpreter.cpp
 )

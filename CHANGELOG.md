@@ -1,5 +1,12 @@
 # Registro de cambios
 
+## 2.3.0 - 2026-11-17 - AST gráfico
+
+- Se añadió un grafo nativo del AST a la interfaz de Windows, con nodos por categoría, conexiones, desplazamiento y ampliación.
+- Se añadió `output/ast.svg` como representación vectorial del árbol en la consola y en la interfaz gráfica.
+- Se añadió una prueba de estructura del grafo y escape de caracteres en SVG.
+- Se actualizaron el README, el manual y el informe técnico para describir el nuevo flujo.
+
 ## 2.2.0 - 2026-11-17 - Entregable 2
 
 ### Corregido

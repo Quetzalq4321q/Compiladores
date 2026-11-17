@@ -13,6 +13,7 @@
 #include "ErrorHandler.h"
 #include "FileConverter.h"
 #include "AST.h"
+#include "ASTGraph.h"
 #include "Parser.h"
 #include "Interpreter.h"
 
@@ -188,6 +189,7 @@ int main(int argc, char* argv[]) {
     const auto& errSintacticos = parser.getErrores();
 
     string strAST = ast ? ast->toTreeString() : "(AST no disponible debido a errores sintacticos criticos)\r\n";
+    string strSVG = ASTGraph::fromProgram(ast).toSVG();
     string strSintactico = ErrorHandler::generarReporteSintactico(sintaxisValida, errSintacticos);
     string strDiagCompleto = ErrorHandler::generarReporteDiagnosticoCompleto(errores, sintaxisValida, errSintacticos);
 
@@ -247,6 +249,7 @@ int main(int argc, char* argv[]) {
     reportesGuardados &= guardarReporte("output/tokens.txt", strTokens);
     reportesGuardados &= guardarReporte("output/tabla_simbolos.txt", strTabla);
     reportesGuardados &= guardarReporte("output/ast.txt", strAST);
+    reportesGuardados &= guardarReporte("output/ast.svg", strSVG);
     reportesGuardados &= guardarReporte("output/errores.txt", strDiagCompleto);
     if (!strEjecucion.empty()) {
         reportesGuardados &= guardarReporte("output/ejecucion.txt", strEjecucion);

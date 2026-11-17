@@ -52,6 +52,7 @@ Release/
 output/tokens.txt
 output/tabla_simbolos.txt
 output/errores.txt
+output/ast.svg
 
 # ==========================
 # Archivos de prueba grandes
