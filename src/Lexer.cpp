@@ -1,3 +1,4 @@
+// Convierte codigo fuente LP en tokens y registra errores lexicos.
 #include "Lexer.h"
 #include <cctype>
 #include <sstream>

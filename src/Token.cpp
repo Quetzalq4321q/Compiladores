@@ -1,3 +1,4 @@
+// Convierte tokens LP a nombres y categorias legibles.
 #include "Token.h"
 
 using namespace std;

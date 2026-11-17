@@ -1,3 +1,4 @@
+// Formatea los nodos del arbol sintactico para reportes de texto.
 #include "AST.h"
 
 using namespace std;
@@ -137,6 +138,15 @@ string ScanfNode::toTreeString(const string& prefix, bool isLast) const {
     for (size_t i = 0; i < terminos.size(); ++i) {
         bool lastT = (i + 1 == terminos.size());
         ss << subPrefix << getRama(lastT) << "Leer: " << terminos[i].id << "\n";
+        string indicePrefix = getSubPrefix(subPrefix, lastT);
+        for (size_t j = 0; j < terminos[i].dimensiones.size(); ++j) {
+            bool ultimoIndice = j + 1 == terminos[i].dimensiones.size();
+            ss << indicePrefix << getRama(ultimoIndice) << "Indice [" << j << "]:\n";
+            if (terminos[i].dimensiones[j]) {
+                ss << terminos[i].dimensiones[j]->toTreeString(
+                    getSubPrefix(indicePrefix, ultimoIndice), true);
+            }
+        }
     }
     return ss.str();
 }

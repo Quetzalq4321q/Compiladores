@@ -1,3 +1,4 @@
+# Configura los ejecutables de analisis, interfaz y pruebas de LP.
 cmake_minimum_required(VERSION 3.20)
 
 project(Compiladores)
@@ -67,3 +68,16 @@ add_executable(test_parser
         src/Parser.cpp
         src/Interpreter.cpp
 )
+
+# Las comprobaciones assert de las pruebas deben ejecutarse tambien en Release.
+if (MSVC)
+    target_compile_options(test_lexer PRIVATE /UNDEBUG)
+    target_compile_options(test_parser PRIVATE /UNDEBUG)
+else()
+    target_compile_options(test_lexer PRIVATE -UNDEBUG)
+    target_compile_options(test_parser PRIVATE -UNDEBUG)
+endif()
+
+enable_testing()
+add_test(NAME lexer COMMAND test_lexer)
+add_test(NAME parser COMMAND test_parser)

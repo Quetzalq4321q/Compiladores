@@ -1,3 +1,4 @@
+# Reune los binarios, pruebas y documentos en un ZIP portatil para Windows x64.
 param(
     [string]$BuildDir = "cmake-build-release-portable",
     [string]$PackageName = "Compiladores-portable-windows-x64"
@@ -35,7 +36,7 @@ Copy-Item (Join-Path $build "Compiladores.exe") $stage
 Copy-Item (Join-Path $build "compilador_lp.exe") $stage
 Copy-Item (Join-Path $root "input") $stage -Recurse
 Copy-Item (Join-Path $root "tests") $stage -Recurse
-foreach ($doc in @("README.md", "MANUAL_USUARIO.md")) {
+foreach ($doc in @("README.md", "MANUAL_USUARIO.md", "INFORME_ENTREGABLE2.md", "CHANGELOG.md")) {
     Copy-Item (Join-Path $root $doc) $stage
 }
 foreach ($dll in @("libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll")) {

@@ -1,250 +1,46 @@
-﻿# Changelog - Compiladores LP
+# Registro de cambios
 
-Todos los cambios notables en el proyecto **Compiladores (Lenguaje LP)** están documentados en este archivo.
-
-El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/) y este proyecto se adhiere a [Semantic Versioning](https://semver.org/lang/es/).
-
----
-
-## [2.1.0] - 2026-11-12
-
-### Motor de Ejecución en Tiempo Real (Intérprete LP), Optimización Algorítmica O(1), Estilos Visuales Modernos WinAPI v6 y Enlace Estático de Runtime
-
-Esta versión resuelve las observaciones de rendimiento, funcionalidad y portabilidad:
-1. **Falta de funcionalidad de ejecución**: El compilador ahora no solo analiza la sintaxis, sino que ejecuta los programas LP en memoria mediante un intérprete AST en tiempo real.
-2. **Errores de librerías/DLLs al ejecutar**: Se configuró enlace estático completo (-static-libgcc -static-libstdc++) y bundling de libwinpthread-1.dll, garantizando que los binarios se ejecuten sin errores de librerías faltantes en cualquier sistema Windows.
-3. **Eficiencia algorítmica**: La tabla de símbolos ahora opera en tiempo constante amortizado O(1) gracias a una tabla hash interna (std::unordered_map), optimizando análisis masivos.
-4. **Modernización de la interfaz**: Se incorporó el manifiesto de controles comunes de Windows v6.0 (estilos nativos de Windows 10/11), 6 pestañas interactivas, una consola terminal de ejecución integrada y botones de acción rápida en la barra superior.
-
-### Añadido
-* **Motor de Ejecución e Intérprete AST (Interpreter.h / Interpreter.cpp)**:
-  * Ejecución directa del Árbol de Sintaxis Abstracta (AST) generado por el Parser.
-  * Estructura polimórfica RuntimeValue con soporte para tipos primitivos (int, loat, string, ool, oid) y arreglos multidimensionales.
-  * Gestión de entornos léxicos (Environment) con soporte para variables locales, parámetros y encadenamiento de alcances (scope chain).
-  * Evaluación de expresiones binarias y unarias con semántica de tipos y coerción segura.
-  * Invocación de funciones (unc) con paso de argumentos por valor y valor de retorno.
-  * Control de flujo para sentencias condicionales if/else y bucles de repetición while.
-  * Captura de salida para sentencias println(...) en un búfer de consola.
-  * Manejo seguro de errores en tiempo de ejecución:
-    * Detección de división por cero con mensaje explicativo e interrupción controlada.
-    * Límite de pasos de ejecución (maxSteps = 500,000) para prevenir congelamientos por bucles infinitos.
-  * Medición de latencia de ejecución en microsegundos (getTiempoEjecucionMs()).
-* **Pestaña 6 en GUI: Consola de Ejecución**:
-  * Control de edición con fondo oscuro de terminal (RGB(20, 24, 30)) y texto verde fósforo (RGB(50, 255, 140)).
-  * Salida en tiempo real de println(...), valor de retorno y tiempo de ejecución en milisegundos.
-* **Barra de Acciones Rápidas en GUI**:
-  * Botón [ ▶ Ejecutar LP ] (IDC_BTN_EJECUTAR): Analiza, valida y ejecuta inmediatamente el código LP.
-  * Botón [ 📝 Ejemplo OK ] (IDC_BTN_EJ_VALIDO): Carga un programa formal válido de demostración.
-  * Botón [ ⚠️ Ejemplo Error ] (IDC_BTN_EJ_ERROR): Carga un ejemplo con errores sintácticos para validar el modo pánico.
-  * Botón [ 🧹 Limpiar ] (IDC_BTN_LIMPIAR): Limpia el editor y reinicia los paneles.
-* **Manifiesto de Controles Comunes Modernos (es/compiler.manifest)**:
-  * Integración de Microsoft.Windows.Common-Controls versión 6.0.0.0 en el archivo de recursos es/resource.rc.
-  * Renders nativos estilo Windows 10/Windows 11 para pestañas, botones y cuadros de texto.
-* **Generación de Reporte de Ejecución**:
-  * Nuevo archivo generado en disco: output/ejecucion.txt con la salida capturada de la consola y métricas de ejecución.
-* **Pruebas de Intérprete en 	est_parser.cpp**:
-  * 	estEjecucionInterprete(): Valida invocación de funciones, control de flujo y retorno de valor.
-  * 	estErrorRuntimeDivisionPorCero(): Valida contención segura de excepciones aritméticas.
-
-### Optimizado
-* **Tabla de Símbolos (SymbolTable.h / SymbolTable.cpp)**:
-  * Incorporación de std::unordered_map<std::string, int> mapaIndices.
-  * Búsquedas e inserciones pasaron de O(N) a O(1) amortizado.
-* **Compilación y Rendimiento**:
-  * Activación de bandera de optimización -O3 en CMakeLists.txt.
-  * Pre-reserva de memoria (eserve()) en vectores de tokens y errores.
+## 2.2.0 - 2026-11-17 - Entregable 2
 
 ### Corregido
-* **Falta de Librerías / DLLs de Runtime en Windows**:
-  * Configuración de -static-libgcc -static-libstdc++ en CMakeLists.txt, eliminando las dependencias externas de libstdc++-6.dll y libgcc_s_seh-1.dll.
-  * Copia automática de libwinpthread-1.dll en la carpeta de compilación (cmake-build-debug/) y en los paquetes portables de distribución (dist/), permitiendo ejecutar los binarios de inmediato sin necesidad de instalar entornos MinGW.
 
----
-
-## [2.0.0] - 2026-11-11
-
-### Entregable 1 - Analizador Sintáctico por Descenso Recursivo, AST y GUI de 5 Pestañas (30%)
-
-Esta versión marca la entrega formal del **Entregable 1 del Analizador Sintáctico** para el lenguaje formal **LP (Lenguaje de Programación)**, cumpliendo con la gramática libre de contexto especificada por la cátedra, diferenciación de aceptación vs. rechazo, construcción del Árbol de Sintaxis Abstracta (AST), reporte de errores sintácticos con recuperación por modo pánico y actualización de la interfaz gráfica y CLI.
+- `println` analiza expresiones completas en cada elemento de su lista, incluidas operaciones, índices y llamadas.
+- Las asignaciones combinan llamadas a funciones con otros operadores de expresión.
+- Los signos unarios aceptan factores entre paréntesis y llamadas a funciones.
+- La recuperación sintáctica conserva el comienzo de la siguiente sentencia cuando encuentra un error.
+- El árbol textual incluye los índices de los destinos de `scanf`.
+- Los reportes sintácticos indican la construcción esperada junto a la línea y el token encontrado.
 
 ### Añadido
-* **Analizador Sintáctico por Descenso Recursivo (`Parser`)**:
-  * Implementación recursiva pura en `src/Parser.h` y `src/Parser.cpp` cuyos métodos coinciden exactamente con los no terminales de la gramática formal:
-    * `PROGRAMA -> LISTA_FUNCIONES PRINCIPAL`
-    * `LISTA_FUNCIONES -> DECLARACION_FUNCION LISTA_FUNCIONES | ε`
-    * `DECLARACION_FUNCION -> [func] TIPO_RETORNO id ( PARAMETROS ) BLOQUE`
-    * `TIPO_RETORNO -> TIPO | void`
-    * `TIPO -> TIPO_BASE DIMENSION`
-    * `TIPO_BASE -> int | float | char | boolean | string`
-    * `DIMENSION -> [ num_int ] DIMENSION | ε`
-    * `PARAMETROS -> TIPO id LISTA_PARAMETROS | ε`
-    * `LISTA_PARAMETROS -> , TIPO id LISTA_PARAMETROS | ε`
-    * `PRINCIPAL -> [TIPO_RETORNO] main ( ) BLOQUE`
-    * `BLOQUE -> { LISTA_VARIABLES COMANDOS }`
-    * `LISTA_VARIABLES -> TIPO id DIMENSION LISTA_ID ; LISTA_VARIABLES | ε`
-    * `LISTA_ID -> , id DIMENSION LISTA_ID | ε`
-    * `COMANDOS -> COMANDO COMANDOS | ε`
-    * `COMANDO -> ASIGNACION | RETORNO | LECTURA | ESCRITURA | SELECCION | MIENTRAS | FUNCION`
-    * `ASIGNACION -> id [DIMENSION] = COMPLEMENTO ;`
-    * `COMPLEMENTO -> EXPRESION | FUNCION`
-    * `FUNCION -> func id ( ARGUMENTOS )`
-    * Jerarquía completa de expresiones por precedencia de operadores: `EXPRESION -> EXPRESION_O -> EXPRESION_Y -> EXPRESION_NO -> EXPRESION_COMP -> EXPRESION_ADITIVA -> EXPRESION_MULT -> TERMINO_EXPR`.
-    * `RETORNO -> return EXPRESION ;` (con validación de que `return;` vacío es un error sintáctico).
-    * `LECTURA -> scanf ( TERMINO_LECTURA NUEVO_TERMINO_LECTURA ) ;`
-    * `ESCRITURA -> println ( TERMINO_ESCRITURA NUEVO_TERMINO_ESCRITURA ) ;`
-    * `SELECCION -> if ( EXPRESION ) BLOQUE SINO`
-    * `SINO -> else BLOQUE | ε`
-    * `MIENTRAS -> while ( EXPRESION ) BLOQUE`
-* **Incorporación de la Palabra Reservada `func` al Analizador Léxico**:
-  * Nuevo tipo `LexTokenType::KW_FUNC` reconocido como `<FUNC>`.
-  * Categoría: *"Palabra reservada"*.
-* **Jerarquía de Clases del Árbol de Sintaxis Abstracta (AST)**:
-  * Archivos `src/AST.h` y `src/AST.cpp` con nodos polimórficos:
-    * `ASTNode` (clase base abstracta con método `toTreeString()`).
-    * `ProgramNode`, `FunctionDeclNode`, `BlockNode`, `VarDeclNode`, `AssignNode`.
-    * `ScanfNode`, `PrintlnNode`, `IfNode`, `WhileNode`, `ReturnNode`.
-    * `ExprNode`, `LiteralNode`, `IdentifierNode`, `BinaryOpNode`, `UnaryOpNode`, `FuncCallNode`.
-  * Visualización estructurada con ramas de árbol UTF-8 (`├──`, `└──`, `│   `).
-* **Diferenciación de Aceptación vs. Rechazo**:
-  * Método `parser.esAceptado()` que devuelve `true` únicamente si 0 errores sintácticos fueron registrados.
-  * Banner visual y en consola:
-    * `[✓] PROGRAMA ACEPTADO` en caso de validez total.
-    * `[✗] PROGRAMA RECHAZADO` con conteo de errores léxicos y sintácticos.
-* **Recuperación de Errores por Modo Pánico (Panic Mode Recovery)**:
-  * El parser detecta errores sintácticos, los almacena con línea, token encontrado y construcción esperada, y sincroniza hasta el siguiente punto seguro (`;`, `}`, palabras clave) para continuar analizando y no colapsar.
-* **Interfaz Gráfica Actualizada (5 Pestañas)**:
-  * Pestaña 0: `Entrada (Código Fuente)`
-  * Pestaña 1: `Secuencia de Tokens`
-  * Pestaña 2: `Tabla de Símbolos`
-  * Pestaña 3: `Árbol Sintáctico (AST)` (Nueva)
-  * Pestaña 4: `Diagnóstico y Errores` (Léxico y Sintáctico unificados)
-  * Banner superior dinámico `[✓] / [✗]` indicando el estado del análisis.
-* **Exportación de Reporte AST**:
-  * Nuevo archivo generado automáticamente en disco: `output/ast.txt`.
-* **Casos de Prueba Oficiales para Entregable 1 (`tests/`)**:
-  * `tests/entregable1_valido.lp`: Código mínimo válido de la sección 4.2 de la guía docente.
-  * `tests/entregable1_invalido1.lp`: Código con error por falta de `;` de la sección 4.3.
-  * `tests/entregable1_invalido2.lp`: Código con bloque no cerrado (`}`).
-  * `tests/entregable1_funciones.lp`: Programa con declaración de funciones y llamada con `func`.
-* **Suite de Pruebas Unitarias del Analizador Sintáctico (`test_parser.exe`)**:
-  * 7 tests automatizados cubriendo casos válidos, inválidos, modo pánico, matrices y funciones con 100% de éxito.
 
----
+- Pruebas integrales y archivos `.lp` válidos e inválidos para funciones, arreglos, lectura, control de flujo, precedencia, retorno y recuperación de errores.
+- Comentarios breves al inicio de los módulos fuente y las pruebas.
+- README con compilación, uso, módulos, sintaxis y limitaciones; informe técnico de la segunda entrega.
+- ZIP portátil de Windows actualizado con ambos ejecutables, pruebas y documentación.
 
-## [1.0.0] - 2026-09-29
+## 2.1.0 - 2026-11-12
 
-### Entrega Final - Analizador Léxico Completo, GUI WinAPI y Contención de Errores
+- Se incorporó el intérprete de AST, con funciones, arreglos, control de flujo y reportes de ejecución.
+- Se añadieron protecciones ante división por cero y ciclos que exceden el límite de pasos.
+- Se amplió la interfaz WinAPI con una consola de ejecución y se configuró el empaquetado portátil.
 
-Esta versión representa la entrega formal y completa del proyecto según las directivas de la cátedra de Compiladores (Prof. Nury Yuleny Arosquipa Yanque) y los requerimientos del lenguaje LP (Lenguaje de Programación).
+## 2.0.0 - 2026-11-11
 
-### Añadido
-* **Secuencia de tokens en formato estándar LP**: Formateo por líneas que reproduce con exactitud la especificación de tokens del proyecto:
-  ```text
-  <VOID> <MAIN> <(> <)> <{>
-  <INT> <ID,0> <=> <NUM_INT> <;>
-  <FLOAT> <ID,1> <=> <NUM_DEC> <;>
-  <IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)>
-  <{> <PRINTLN> <(> <TEXTO> <)> <;> <}>
-  <RETURN> <;> <}>
-  ```
-* **Categorías oficiales en la Tabla de Tokens**:
-  * *Palabra reservada*: `void`, `main`, `int`, `float`, `char`, `boolean`, `if`, `else`, `for`, `while`, `scanf`, `println`, `return`.
-  * *Identificador*: Formato `<ID,pos>` vinculado a la tabla de símbolos.
-  * *Número entero*: `<NUM_INT>` (`[0-9]+`).
-  * *Número decimal*: `<NUM_DEC>` (`[0-9]+\.[0-9]+`).
-  * *Constantes de texto*: `<TEXTO>` (`"..."`).
-  * *Operador de Asignación*: `<=>` (`=`).
-  * *Operador aritmético*: `<+>`, `<->`, `<*>`, `</>`, `<%>`.
-  * *Operador lógico*: `<&&>`, `<||>`, `<!>`.
-  * *Operador de Comparación/Relacionales*: `<COMP>` (`==`, `!=`, `<`, `<=`, `>`, `>=`).
-  * *Símbolo especial*: `<(>`, `<)>`, `<[>`, `<]>`, `<{>`, `<}>`, `<,>`, `<;>`.
-* **Módulo unificado de contención de errores (`ErrorHandler`)**:
-  * Archivo centralizado (`src/ErrorHandler.h`, `src/ErrorHandler.cpp`) para validación antes de que el motor léxico procese entradas.
-  * Detección temprana y rechazo explícito de formatos de imagen (`.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.webp`, `.svg`, etc.) indicando que no son fuentes legibles.
-  * Detección y rechazo de archivos binarios y ejecutables (`.exe`, `.dll`, `.bin`, `.zip`, `.rar`, etc.).
-  * Detección y rechazo de archivos multimedia (`.mp3`, `.mp4`, etc.).
-  * Validación de valores muertos: detección de archivos de 0 bytes o código fuente compuesto exclusivamente por espacios en blanco o saltos de línea.
-  * Verificación de integridad de bytes nulos (`\0`) en archivos de texto.
-* **Identidad Visual e Icono Oficial del Compilador (`res/`)**:
-  * Diseño de icono distintivo representando el compilador: brackets de código `< / >` sobre engranaje de transformación y badge `LP`.
-  * Generación en formatos `res/compiler.svg` (vectorial), `res/compiler.png` (256x256) y `res/compiler.ico` (multi-resolución).
-  * Incrustación de `res/compiler.ico` en el binario ejecutable Windows `Compiladores.exe` mediante `res/resource.rc` y asociación de icono a la ventana y barra de tareas.
-* **Aplicación CLI y Soporte Contenedorizado Docker**:
-  * Ejecutable de línea de comandos `compilador_lp` compatible con Linux y Windows.
-  * `Dockerfile` multi-etapa optimizado sobre GCC 13 y Debian bookworm-slim con ejecución de pruebas unitarias automáticas durante la construcción.
-  * Configuración `docker-compose.yml` para ejecución inmediata y mapeo de volúmenes de entrada/salida (`input/` y `output/`).
-  * Compatibilidad multiplataforma en `FileConverter` para compilar en Linux sin dependencias Win32.
-* **Detección y Alertas de Anomalías Lógicas de Escritura (Carecen de Sentido)**:
-  * El analizador reconoce y procesa tokens repetidos pero alerta explícitamente sobre secuencias anómalas que carecen de sentido léxico o lógico:
-    * Secuencias masivas de puntos y comas (ej. `;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;`): genera los tokens `<;>` pero emite alerta de falta de sentido.
-    * Secuencias de comas repetidas (ej. `,,`, `,,,`).
-    * Operadores de asignación incongruentes (ej. `===`, `====`).
-    * Operadores aritméticos y de módulo repetidos consecutivamente (ej. `+++`, `---`, `***`, `%%%`).
-    * Operadores lógicos repetidos (ej. `&&&`, `|||`).
-* **Suite de Pruebas Unitarias Automatizadas (`test_lexer.exe`)**:
-  * Test 1: Verificación del caso de prueba oficial de la Sección 12 con secuencia exacta.
-  * Test 2: Operadores aritméticos y descarte correcto de comentarios.
-  * Test 3: Operadores relacionales (`<COMP>`) y lógicos.
-  * Test 4: Gestión de identificadores repetidos en la Tabla de Símbolos.
-  * Test 5: Detección y reporte de errores léxicos.
-  * Test 6: Validación de contención de errores y categorías de tokens.
-  * Test 7: Validación de lectura y alertas sobre anomalías de escritura carentes de sentido (`;;;;...`, `+++`, `===`).
-* **Automatización de Builds y Publicación**:
-  * Script PowerShell `release.ps1` con compilación automática, empaquetado en ZIP de distribución, generación de imagen Docker y publicación automatizada mediante GitHub CLI (`gh`).
+- Se incorporaron el analizador sintáctico por descenso recursivo, el AST y las primeras pruebas del parser.
+- La interfaz gráfica pasó a mostrar el resultado sintáctico y el árbol.
 
-### Modificado
-* **Visualización de Tokens**: Se eliminó la columna de posición de caracteres (*columna*) de la interfaz y los reportes para alinearse a la tabla de la cátedra.
-* **Tabla de Símbolos**: Indexación persistente en base 0 con registro de línea de primera aparición y trazabilidad de todas las líneas en las que aparece el identificador.
-* **Manejo de Operadores de Comparación**: Se unificaron `==`, `!=`, `<`, `<=`, `>`, `>=` bajo el token único `<COMP>`, con categoría *"Operador de Comparacion/Relacionales"*.
+## 1.0.0 - 2026-09-29
 
-### Corregido
-* Conversión uniforme de saltos de línea (`\n` &rarr; `\r\n`) en controles WinAPI `EDIT` para evitar corrupción de visualización en Windows.
-* Normalización UTF-8 en archivos de salida y scripts de despliegue.
+- Se completó el analizador léxico y la interfaz de Windows, con reportes de tokens, símbolos y errores.
 
----
+## 0.3.0 - 2026-09-28
 
-## [0.3.0] - 2026-09-28
+- Se integraron formatos adicionales de entrada y exportación automática de reportes.
 
-### Integración Multiformato y Exportación Automática
+## 0.2.0 - 2026-09-27
 
-### Añadido
-* **Módulo `FileConverter`**:
-  * Lectura nativa de archivos `.lp` y `.txt`.
-  * Extracción automatizada de contenido textual desde documentos Microsoft Word (`.docx`).
-  * Extracción de texto desde documentos PDF (`.pdf`) utilizando utilidades nativas de PowerShell en segundo plano.
-* **Exportación automática a disco**:
-  * Guardado automático en la carpeta `output/`:
-    * `tokens.txt`: Secuencia formateada por líneas y tabla clasificada.
-    * `tabla_simbolos.txt`: Identificadores únicos y ubicaciones.
-    * `errores.txt`: Detalle de incidencias léxicas detectadas.
+- Se añadió la interfaz gráfica WinAPI.
 
----
+## 0.1.0 - 2026-09-25
 
-## [0.2.0] - 2026-09-27
-
-### Interfaz Gráfica Nativa de Usuario (WinAPI)
-
-### Añadido
-* **GUI nativa en C++ puro** sin dependencias externas pesadas (Qt, Electron, etc.).
-* Sistema de navegación por pestañas (`SysTabControl32`):
-  * *Entrada (Código Fuente)*: Editor multilínea con soporte de escritura manual o carga de archivos.
-  * *Secuencia de Tokens*: Visualización de tokens clasificados.
-  * *Tabla de Símbolos*: Listado de identificadores y sus índices.
-  * *Errores Léxicos*: Listado detallado de incidencias encontradas.
-* Diálogo de selección de archivo nativo `GetOpenFileNameA` con filtrado por extensiones.
-* Tipografía de alta legibilidad (*Segoe UI* para controles y *Consolas* para código y tablas).
-
----
-
-## [0.1.0] - 2026-09-25
-
-### Prototipo Inicial del Motor Léxico
-
-### Añadido
-* Estructuras de datos base: enumeración `LexTokenType` y clase `Token`.
-* Clase `SymbolTable` para almacenamiento asociativo de identificadores.
-* Motor base `Lexer` implementando autómatas de estados finitos para:
-  * Enteros y decimales.
-  * Identificadores de variables y funciones.
-  * Palabras reservadas fundamentales (`int`, `float`, `if`, `else`, `return`, `void`, `main`).
-  * Descarte de comentarios de una línea (`//`) y de bloque (`/* ... */`).
+- Se creó el prototipo del analizador léxico.

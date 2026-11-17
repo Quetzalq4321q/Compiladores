@@ -1,3 +1,4 @@
+// Verifica tokens, simbolos y diagnosticos del analizador lexico.
 #include <iostream>
 #include <cassert>
 #include <string>

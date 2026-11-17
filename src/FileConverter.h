@@ -1,3 +1,4 @@
+// Expone la lectura de archivos de entrada y sus errores de conversion.
 #pragma once
 
 #include <string>

@@ -1,3 +1,4 @@
+// Registra identificadores y sus apariciones para los reportes.
 #include "SymbolTable.h"
 
 using namespace std;

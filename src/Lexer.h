@@ -1,3 +1,4 @@
+// Declara el analizador lexico y sus resultados de tokens y simbolos.
 #pragma once
 
 #include <string>

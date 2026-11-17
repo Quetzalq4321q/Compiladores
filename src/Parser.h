@@ -1,3 +1,4 @@
+// Declara las producciones del parser y los errores sintacticos con ubicacion.
 #pragma once
 
 #include <vector>
@@ -104,7 +105,7 @@ private:
     /* ESCRITURA -> println ( TERMINO_ESCRITURA NUEVO_TERMINO_ESCRITURA ) ; */
     shared_ptr<PrintlnNode> parseEscritura();
 
-    /* TERMINO_ESCRITURA -> id DIMENSION2 | CONSTANTE | texto */
+    /* TERMINO_ESCRITURA -> EXPRESION */
     shared_ptr<ExprNode> parseTerminoEscritura();
 
     /* NUEVO_TERMINO_ESCRITURA -> , TERMINO_ESCRITURA NUEVO_TERMINO_ESCRITURA | ε */
@@ -122,7 +123,7 @@ private:
     /* ASIGNACION -> id [DIMENSION2] = COMPLEMENTO ; */
     shared_ptr<AssignNode> parseAsignacion();
 
-    /* COMPLEMENTO -> EXPRESION | FUNCION */
+    /* COMPLEMENTO -> EXPRESION (incluye llamadas a funciones) */
     shared_ptr<ExprNode> parseComplemento();
 
     /* FUNCION -> func id ( ARGUMENTOS ) */

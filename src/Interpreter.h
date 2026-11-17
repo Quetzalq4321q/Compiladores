@@ -1,3 +1,4 @@
+// Define los valores, entornos y operaciones del interprete LP.
 #pragma once
 
 #include <string>

@@ -1,3 +1,4 @@
+// Ejecuta el flujo de lectura, analisis y reportes desde la consola.
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -195,10 +196,10 @@ int main(int argc, char* argv[]) {
 
     /* Mostrar Diagnostico Sintactico */
     if (sintaxisValida && errores.empty()) {
-        cout << "\033[1;32m[✓] PROGRAMA ACEPTADO: Sin errores lexicos ni sintacticos.\033[0m\n" << endl;
+        cout << "\033[1;32m[OK] PROGRAMA ACEPTADO: Sin errores lexicos ni sintacticos.\033[0m\n" << endl;
         cout << "\033[1;32m" << strSintactico << "\033[0m" << endl;
     } else {
-        cout << "\033[1;31m[✗] PROGRAMA RECHAZADO: Se detectaron fallas estructurales.\033[0m\n" << endl;
+        cout << "\033[1;31m[ERROR] PROGRAMA RECHAZADO: Se detectaron fallas estructurales.\033[0m\n" << endl;
         cout << "\033[1;31m" << strSintactico << "\033[0m" << endl;
     }
 
@@ -223,7 +224,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (exitoExec) {
-            cout << "\033[1;32m[✓] Fin de ejecucion exitoso (Retorno: " << interprete.getCodigoRetorno()
+            cout << "\033[1;32m[OK] Fin de ejecucion exitoso (Retorno: " << interprete.getCodigoRetorno()
                  << ", Tiempo: " << fixed << setprecision(3) << interprete.getTiempoMs() << " ms)\033[0m\n" << endl;
         } else {
             cerr << "\033[1;31m[!] Errores en tiempo de ejecucion detectados:\033[0m" << endl;

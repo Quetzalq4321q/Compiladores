@@ -1,3 +1,4 @@
+// Verifica producciones, recuperacion de errores, AST e interpretacion.
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -274,6 +275,108 @@ void testErrorRuntimeDivisionPorCero() {
     cout << "[PASS] Division por cero detectada y controlada de forma segura: " << interprete.getErrores()[0] << endl;
 }
 
+/* Cubre precedencia, arreglos, E/S, control de flujo, funciones y retorno. */
+void testEntregable2Integral() {
+    const string codigo = R"(func int doble(int n) {
+    return n * 2;
+}
+void main() {
+    int matriz[2][3], valor, i;
+    scanf(valor);
+    valor = func doble(1 + 2 * 3);
+    matriz[1][2] = valor;
+    i = 0;
+    if (!(valor < 10) && valor >= 14) {
+        println("Valor:", matriz[1][2] + 1);
+    } else {
+        println("No valido");
+    }
+    while (i < 2) {
+        i = i + 1;
+    }
+    return -(valor + i);
+})";
+    Lexer lexer(codigo);
+    lexer.analizar();
+    assert(lexer.getErrores().empty());
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+    assert(ast && ast->funciones.size() == 1);
+    auto bloque = ast->funcionPrincipal->bloque;
+    assert(bloque->comandos.size() == 7);
+    auto asignacion = dynamic_pointer_cast<AssignNode>(bloque->comandos[1]);
+    assert(asignacion);
+    auto llamada = dynamic_pointer_cast<FuncCallNode>(asignacion->expresion);
+    assert(llamada && llamada->argumentos.size() == 1);
+    auto suma = dynamic_pointer_cast<BinaryOpNode>(llamada->argumentos[0]);
+    assert(suma && suma->op == "+");
+    auto producto = dynamic_pointer_cast<BinaryOpNode>(suma->der);
+    assert(producto && producto->op == "*");
+    Interpreter interprete(ast);
+    assert(interprete.ejecutar());
+    assert(interprete.getCodigoRetorno() == -16);
+    assert(interprete.getSalida().find("Valor: 15") != string::npos);
+}
+
+void testIndicesDeLecturaEnAST() {
+    Lexer lexer("void main() { int matriz[2]; scanf(matriz[1]); return 0; }");
+    lexer.analizar();
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+    assert(ast->toTreeString().find("Indice [0]:") != string::npos);
+}
+
+void testPrecedenciaLogicaYAsociatividad() {
+    Lexer lexer("void main() { int a; a = 10 - 3 - 2; if (a > 0 || a < 0 && a > -2) { println(a); } return a; }");
+    lexer.analizar();
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+    auto bloque = ast->funcionPrincipal->bloque;
+    auto asignacion = dynamic_pointer_cast<AssignNode>(bloque->comandos[0]);
+    auto resta = dynamic_pointer_cast<BinaryOpNode>(asignacion->expresion);
+    assert(resta && resta->op == "-");
+    auto izquierda = dynamic_pointer_cast<BinaryOpNode>(resta->izq);
+    assert(izquierda && izquierda->op == "-");
+    auto seleccion = dynamic_pointer_cast<IfNode>(bloque->comandos[1]);
+    auto disyuncion = dynamic_pointer_cast<BinaryOpNode>(seleccion->condicion);
+    assert(disyuncion && disyuncion->op == "||");
+    auto conjuncion = dynamic_pointer_cast<BinaryOpNode>(disyuncion->der);
+    assert(conjuncion && conjuncion->op == "&&");
+}
+
+void testLlamadaCombinadaEnExpresion() {
+    Lexer lexer("func int doble(int n) { return n * 2; } void main() { int a; a = -(func doble(2) + 3); println(a); return a; }");
+    lexer.analizar();
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(parser.esAceptado());
+    auto asignacion = dynamic_pointer_cast<AssignNode>(ast->funcionPrincipal->bloque->comandos[0]);
+    auto negativo = dynamic_pointer_cast<UnaryOpNode>(asignacion->expresion);
+    assert(negativo && negativo->op == "-");
+    auto suma = dynamic_pointer_cast<BinaryOpNode>(negativo->operando);
+    assert(suma && suma->op == "+" && dynamic_pointer_cast<FuncCallNode>(suma->izq));
+    Interpreter interprete(ast);
+    assert(interprete.ejecutar());
+    assert(interprete.getCodigoRetorno() == -7);
+}
+
+void testMultiplesErroresSintacticos() {
+    Lexer lexer("void main() { int a\n a = 1; println(a + ); return; }");
+    lexer.analizar();
+    Parser parser(lexer.getTokens());
+    auto ast = parser.parsear();
+    assert(ast != nullptr);
+    assert(!parser.esAceptado());
+    assert(parser.getErrores().size() >= 3);
+    for (const auto& e : parser.getErrores()) {
+        assert(e.linea > 0 && !e.tokenEncontrado.empty() && !e.construccionEsperada.empty());
+    }
+    assert(parser.getReporteErrores().find("ESPERADO") != string::npos);
+}
+
 int main() {
     cout << "\n=======================================================" << endl;
     cout << " SUITE DE PRUEBAS DEL ANALIZADOR SINTACTICO E INTERPRETE LP" << endl;
@@ -288,9 +391,14 @@ int main() {
     testRecuperacionModoPanico();
     testEjecucionInterprete();
     testErrorRuntimeDivisionPorCero();
+    testEntregable2Integral();
+    testIndicesDeLecturaEnAST();
+    testPrecedenciaLogicaYAsociatividad();
+    testLlamadaCombinadaEnExpresion();
+    testMultiplesErroresSintacticos();
 
     cout << "\n=======================================================" << endl;
-    cout << " [100% PASS] TODAS LAS PRUEBAS SINTACTICAS Y DE EJECUCION EXITOSAS" << endl;
+    cout << " [PASS] TODAS LAS PRUEBAS SINTACTICAS Y DE EJECUCION EXITOSAS" << endl;
     cout << "=======================================================\n" << endl;
 
     return 0;

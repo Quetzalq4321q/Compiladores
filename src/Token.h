@@ -1,3 +1,4 @@
+// Define las categorias lexicas y los datos de cada token LP.
 #pragma once
 
 #include <string>

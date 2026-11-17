@@ -1,3 +1,4 @@
+// Valida entradas y construye reportes lexicos y sintacticos.
 #include "ErrorHandler.h"
 #include "Parser.h"
 
@@ -329,7 +330,7 @@ string ErrorHandler::generarReporteSintactico(bool aceptado, const vector<Syntax
     ss << "[ESTADO]: PROGRAMA RECHAZADO\r\n";
     ss << "Se encontraron " << errores.size() << " error(es) sintactico(s).\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
-    ss << "LINEA      TOKEN ENCONTRADO              DESCRIPCION DEL ERROR SINTACTICO\r\n";
+    ss << "LINEA      TOKEN ENCONTRADO              ESPERADO              DESCRIPCION\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
 
     for (const auto& e : errores) {
@@ -338,7 +339,10 @@ string ErrorHandler::generarReporteSintactico(bool aceptado, const vector<Syntax
         string tok = "'" + e.tokenEncontrado + "'";
         if (tok.size() < 30) tok.resize(30, ' ');
         else tok += " ";
-        ss << lin << tok << e.mensaje << "\r\n";
+        string esperado = e.construccionEsperada.empty() ? "-" : e.construccionEsperada;
+        if (esperado.size() < 22) esperado.resize(22, ' ');
+        else esperado += " ";
+        ss << lin << tok << esperado << e.mensaje << "\r\n";
     }
     ss << "-------------------------------------------------------------------------------------------\r\n";
     return ss.str();

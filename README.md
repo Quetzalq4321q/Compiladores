@@ -1,203 +1,88 @@
-﻿# Compiladores - Analizador Léxico, Sintáctico (Parser) e Intérprete para Lenguaje LP
+# Compiladores LP
 
-<p align="center">
-  <img src="res/compiler.png" width="128" height="128" alt="Icono Compilador LP" />
-  <br>
-  <strong>Compilador, Analizador Léxico, Parser por Descenso Recursivo, Árbol AST e Intérprete LP (C++20)</strong>
-</p>
+Analizador léxico y sintáctico para programas LP, con construcción de un árbol de sintaxis abstracta (AST), diagnósticos y ejecución básica mediante intérprete. El ejecutable de consola procesa un archivo `.lp` de principio a fin; en Windows también hay una interfaz gráfica.
 
-Compilador desarrollado en C++20 para el lenguaje formal **LP (Lenguaje de Programación)**, correspondiente al **Entregable 1 (30%) de la fase de Análisis Sintáctico y Motor de Ejecución en Tiempo Real**. Incluye:
-* **Analizador sintáctico por descenso recursivo puro** y construcción del Árbol de Sintaxis Abstracta (AST).
-* **Árbol legible en Windows y consola**: ramas ASCII alineadas y literales Unicode visibles en la interfaz.
-* **Motor de Ejecución en Tiempo Real (Intérprete LP)**: Evalúa programas válidos directamente en memoria (variables, arreglos multidimensionales, operadores aritméticos/lógicos/relacionales, llamadas unc, condicionales if/else, bucles while, println y eturn).
-* **Tabla de Símbolos Optimizada**: Búsquedas e inserciones en tiempo constante amortizado O(1) mediante tabla hash std::unordered_map.
-* **Portabilidad Total Sin Errores de DLLs**: Enlace estático de runtime C++ (-static-libgcc -static-libstdc++) y bundling de libwinpthread-1.dll, eliminando cualquier error de librerías faltantes en Windows.
-* **Interfaz Gráfica Nativa Moderna (WinAPI v6)**: 6 pestañas interactivas con estilos visuales modernos de Windows 10/11 (manifiesto Common-Controls v6), consola terminal de ejecución integrada (fondo oscuro RGB(20,24,30) con texto verde terminal RGB(50,255,140)) y barra de herramientas con ejecución inmediata [ ▶ Ejecutar LP ].
-* **Versión CLI Multiplataforma**: Ejecuta en Linux, Docker y Windows generando reportes completos en output/ (incluyendo output/ejecucion.txt).
-* **Suites de Pruebas Automatizadas**: 100% de cobertura en pruebas de léxico, sintáctico, modo pánico, detección de anomalías y runtime.
+## Organización del código
 
----
+| Archivo o módulo | Responsabilidad |
+| --- | --- |
+| `src/Token.*` | Define las clases de tokens y sus datos de ubicación. |
+| `src/Lexer.*` | Convierte el texto fuente en tokens y registra errores léxicos. |
+| `src/SymbolTable.*` | Almacena los identificadores encontrados por el analizador léxico. |
+| `src/Parser.*` | Aplica la gramática por descenso recursivo, recupera errores y construye el AST. |
+| `src/AST.*` | Define los nodos del programa y su representación textual en árbol. |
+| `src/ErrorHandler.*` | Valida la entrada y produce los reportes de tokens, símbolos y errores. |
+| `src/Interpreter.*` | Ejecuta el AST cuando el programa fue aceptado. |
+| `src/FileConverter.*` | Lee archivos de entrada admitidos por la aplicación. |
+| `src/cli_main.cpp` | Coordina lectura, análisis, salida de consola y archivos de reporte. |
+| `src/main.cpp` | Implementa la interfaz gráfica para Windows. |
+| `tests/test_lexer.cpp`, `tests/test_parser.cpp` | Verifican el análisis léxico, sintáctico, AST e intérprete. |
 
-##  Documentación del Proyecto
+Los archivos `.lp` de `tests/` incluyen ejemplos válidos e inválidos. `INFORME_ENTREGABLE2.md` resume la arquitectura, las decisiones y las limitaciones. `CHANGELOG.md` registra las modificaciones.
 
-Para consultar los detalles técnicos, guías y registros de evolución del proyecto, consulta los siguientes documentos:
+## Requisitos y compilación
 
-* 📄 **[Changelog (Registro de Cambios)](CHANGELOG.md)**: Historial completo de versiones (v2.1.0 Intérprete LP y Rendimiento, v2.0.0 Entregable 1 Parser/AST, v1.0.0), nuevas características, correcciones y notas de lanzamiento.
-* 🔧 **[Documentación Técnica de Funciones](DOCS_FUNCIONES.md)**: Detalle exhaustivo de todas las clases (`Parser`, `ASTNode`, `Lexer`, `ErrorHandler`, `SymbolTable`, `FileConverter`), métodos y algoritmos.
-* 🏛️ **[Arquitectura del Sistema](ARQUITECTURA.md)**: Modelo arquitectónico en 4 capas, diagramas Mermaid, árbol sintáctico y estrategia de contención de errores en 4 niveles.
-* 📖 **[Manual de Usuario](MANUAL_USUARIO.md)**: Guía paso a paso para operar la interfaz gráfica de 6 pestañas, la versión CLI, Docker y consultar los reportes en `output/`.
+- Compilador C++20 y CMake 3.20 o posterior.
+- En Windows, MinGW-w64 para compilar la interfaz WinAPI y la consola. CLion puede abrir directamente `CMakeLists.txt`.
+- En Linux, se compila la aplicación de consola y las pruebas. La interfaz WinAPI solo está disponible en Windows.
 
+Desde una terminal en la raíz del repositorio:
 
----
-
-## 1. Especificación del Entregable 1 (Analizador Sintáctico)
-
-### 1.1 Gramática Libre de Contexto de LP
-El analizador sintáctico implementa directamente la gramática no ambigua mediante descenso recursivo:
-* `PROGRAMA -> LISTA_FUNCIONES PRINCIPAL`
-* `LISTA_FUNCIONES -> DECLARACION_FUNCION LISTA_FUNCIONES | ε`
-* `DECLARACION_FUNCION -> [func] TIPO_RETORNO id ( PARAMETROS ) BLOQUE`
-* `TIPO_RETORNO -> TIPO | void`
-* `TIPO -> TIPO_BASE DIMENSION`
-* `TIPO_BASE -> int | float | char | boolean | string`
-* `DIMENSION -> [ num_int ] DIMENSION | ε`
-* `PARAMETROS -> TIPO id LISTA_PARAMETROS | ε`
-* `PRINCIPAL -> [TIPO_RETORNO] main ( ) BLOQUE`
-* `BLOQUE -> { LISTA_VARIABLES COMANDOS }`
-* `LISTA_VARIABLES -> TIPO id DIMENSION LISTA_ID ; LISTA_VARIABLES | ε`
-* `COMANDOS -> COMANDO COMANDOS | ε`
-* `COMANDO -> ASIGNACION | RETORNO | LECTURA | ESCRITURA | SELECCION | MIENTRAS | FUNCION`
-* `ASIGNACION -> id [DIMENSION] = COMPLEMENTO ;`
-* `COMPLEMENTO -> EXPRESION | FUNCION`
-* `FUNCION -> func id ( ARGUMENTOS )`
-* Jerarquía de expresiones: `EXPRESION -> EXPRESION_O -> EXPRESION_Y -> EXPRESION_NO -> EXPRESION_COMP -> EXPRESION_ADITIVA -> EXPRESION_MULT -> TERMINO_EXPR`.
-* `RETORNO -> return EXPRESION ;`
-
-### 1.2 Programas de Prueba del Entregable 1
-* **Programa Mínimo Válido (Sección 4.2)**: [`tests/entregable1_valido.lp`](tests/entregable1_valido.lp) &rarr; **Aceptado (0 errores)**.
-* **Programa Mínimo Inválido (Sección 4.3 - Falta `;`)**: [`tests/entregable1_invalido1.lp`](tests/entregable1_invalido1.lp) &rarr; **Rechazado (detecta falta de punto y coma)**.
-* **Programa Inválido por Bloque Abierto**: [`tests/entregable1_invalido2.lp`](tests/entregable1_invalido2.lp) &rarr; **Rechazado**.
-* **Programa con Funciones y `func`**: [`tests/entregable1_funciones.lp`](tests/entregable1_funciones.lp) &rarr; **Aceptado con AST completo**.
-
-## 1. Especificación Léxica de LP
-
-### 1.1 Números e Identificadores
-* **NUM_INT**: Dígitos enteros `[0-9]+` &rarr; `<NUM_INT>`
-* **NUM_DEC**: Dígitos decimales `[0-9]+\.[0-9]+` &rarr; `<NUM_DEC>`
-* **ID**: Identificadores `[a-zA-Z_][a-zA-Z0-9_]*` &rarr; `<ID,pos>` *(donde pos es su índice único en la tabla de símbolos)*
-* **TEXTO**: Cadenas de caracteres `"..."` &rarr; `<TEXTO>`
-
-### 1.2 Palabras Reservadas
-| Lexema | Token | Lexema | Token |
-|---|---|---|---|
-| `int` | `<INT>` | `void` | `<VOID>` |
-| `float` | `<FLOAT>` | `main` | `<MAIN>` |
-| `char` | `<CHAR>` | `if` | `<IF>` |
-| `boolean` | `<BOOLEAN>` | `else` | `<ELSE>` |
-| `for` | `<FOR>` | `while` | `<WHILE>` |
-| `scanf` | `<SCANF>` | `println` | `<PRINTLN>` |
-| `return` | `<RETURN>` | `string` | `<STRING>` |
-
-### 1.3 Operadores
-* **Asignación:** `=` &rarr; `<=>`
-* **Aritméticos:** `+` &rarr; `<+>`, `-` &rarr; `<->`, `*` &rarr; `<*>`, `/` &rarr; `</>`, `%` &rarr; `<%>`
-* **Lógicos:** `&&` &rarr; `<&&>`, `||` &rarr; `<||>`, `!` &rarr; `<!>`
-* **Comparación:** `>`, `>=`, `<`, `<=`, `!=`, `==` &rarr; `<COMP>`
-
-### 1.4 Delimitadores y Símbolos Especiales
-* `(` &rarr; `<(>`, `)` &rarr; `<)>`
-* `[` &rarr; `<[>`, `]` &rarr; `<]>`
-* `{` &rarr; `<{>`, `}` &rarr; `<}>`
-* `,` &rarr; `<,>`, `;` &rarr; `<;>`
-
-### 1.5 Comentarios
-* De una línea: `//.*\n` &rarr; Reconocidos y descartados.
-* De bloque: `/* ... */` &rarr; Reconocidos y descartados.
-
----
-
-## 2. Ejemplo Oficial de Ejecución
-
-### Código Fuente de Entrada:
-```c
-void main() {
-int edad = 20;
-float promedio = 15.5;
-if (edad >= 18 && edad <= 60) {
-println("Edad valida");
-}
-return;
-}
-```
-
-### Secuencia de Tokens Resultante:
 ```text
-<VOID> <MAIN> <(> <)> <{>
-<INT> <ID,0> <=> <NUM_INT> <;>
-<FLOAT> <ID,1> <=> <NUM_DEC> <;>
-<IF> <(> <ID,0> <COMP> <NUM_INT> <&&> <ID,0> <COMP> <NUM_INT> <)> <{>
-<PRINTLN> <(> <TEXTO> <)> <;>
-<}>
-<RETURN> <;>
-<}>
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
 ```
 
-### Tabla de Símbolos:
-| Posición | Identificador | Línea Inicial | Apariciones |
-|---|---|---|---|
-| 0 | `edad` | Línea 2 | L2, L4, L4 |
-| 1 | `promedio` | Línea 3 | L3 |
+En Windows, los binarios se llaman `Compiladores.exe` (interfaz), `compilador_lp.exe`, `test_lexer.exe` y `test_parser.exe`. En Linux no tienen extensión `.exe` y no se genera `Compiladores`.
 
----
+## Uso
 
-## 3. Compilación y Ejecución
+```text
+compilador_lp --no-run tests/entregable2_integral.lp
+compilador_lp tests/entregable2_integral.lp
+test_lexer
+test_parser
+```
 
-### Paquete portable para Windows x64
+En Windows, anteponer `build\` o la ruta real de compilación a cada ejecutable. `--no-run` analiza y genera reportes sin ejecutar el programa. Si no se indica un archivo, la consola busca `input/ejemplo.lp`. Los reportes se guardan en `output/` del directorio desde el que se inicia el ejecutable: `tokens.txt`, `tabla_simbolos.txt`, `ast.txt`, `errores.txt` y, al ejecutar, `ejecucion.txt`. La consola devuelve código 0 si todo fue correcto, 1 ante errores de entrada, 2 ante errores del programa y 3 si no pudo guardar reportes.
 
-El archivo `dist/Compiladores-portable-windows-x64.zip` se genera con
-`./package_portable.ps1` después de compilar `Compiladores` y `compilador_lp`
-en `cmake-build-release-portable`. Extrae el ZIP completo en una carpeta con
-permisos de escritura. Usa `abrir_gui.bat` para la interfaz o
-`ejecutar_cli.bat` para la consola. Los reportes se escriben en `output/`.
-La lectura de PDF requiere Microsoft Word instalado.
+Para probar el ZIP portátil en Windows x64, extraerlo completo en una carpeta con permisos de escritura y abrir `abrir_gui.bat` o `ejecutar_cli.bat`. El paquete se genera después de compilar en modo Release:
 
-
-### 3.1 Aplicación Visual (GUI Windows con 6 Pestañas, AST y Consola de Ejecución)
 ```powershell
-cmake --build cmake-build-debug --target Compiladores
-.\cmake-build-debug\Compiladores.exe
+cmake -S . -B cmake-build-release-portable -DCMAKE_BUILD_TYPE=Release
+cmake --build cmake-build-release-portable
+.\package_portable.ps1 -PackageName Compiladores-portable-windows-x64-entregable2
 ```
 
-### 3.2 Aplicación por Consola (CLI Multiplataforma con AST y Diagnóstico)
-```powershell
-cmake --build cmake-build-debug --target compilador_lp
-.\cmake-build-debug\compilador_lp.exe input/ejemplo.lp
+El resultado es `dist/Compiladores-portable-windows-x64-entregable2.zip`.
+
+## Sintaxis implementada
+
+El programa contiene declaraciones de funciones opcionales y un bloque `main`. Las llamadas usan `func`; las declaraciones también pueden llevar ese prefijo. Se admiten tipos `int`, `float`, `char`, `boolean` y `string`, además de `void` para retorno; las variables y los parámetros tienen tipos básicos y pueden declarar dimensiones de arreglo. Las sentencias admitidas son asignación, llamada, `scanf`, `println`, `if` con `else` opcional, `while` y `return` con expresión. Los bloques se delimitan con llaves y las sentencias indicadas terminan en punto y coma.
+
+De mayor a menor precedencia, las expresiones admiten paréntesis, `!` y signos unarios `+`/`-`; multiplicación, división y módulo; suma y resta; comparación; `&&`; y `||`. Los operadores binarios repetibles se agrupan de izquierda a derecha. La comparación admite una operación por nivel, conforme a la producción actual de la gramática. `println` acepta una lista de expresiones; `scanf` acepta identificadores con índices de arreglo opcionales.
+
+Ejemplo mínimo:
+
+```lp
+func int doble(int n) {
+    return n * 2;
+}
+
+void main() {
+    int valor;
+    valor = func doble(3 + 4);
+    println("Resultado:", valor + 1);
+    return valor;
+}
 ```
 
-### 3.3 Ejecutar Pruebas Automatizadas
-```powershell
-# Pruebas del Analizador Léxico (7 tests)
-cmake --build cmake-build-debug --target test_lexer
-.\cmake-build-debug\test_lexer.exe
+`tests/entregable2_integral.lp` añade lectura, arreglo multidimensional, condicional, ciclo y operadores con distinta precedencia. Los archivos `tests/entregable2_invalido_*.lp` verifican rechazo y recuperación de errores. El reporte sintáctico incluye línea aproximada, token encontrado, construcción esperada y descripción. El AST se imprime como árbol de texto para evitar problemas visuales de un graficador externo.
 
-# Pruebas del Analizador Sintáctico y AST - Entregable 1 (7 tests)
-cmake --build cmake-build-debug --target test_parser
-.\cmake-build-debug\test_parser.exe
-```
+## Limitaciones conocidas
 
----
-
-## 4.  Entorno Docker (Dockeado)
-
-El proyecto incluye soporte completo para ejecución contenedorizada en Linux mediante Docker y Docker Compose:
-
-### Construir y Ejecutar con Docker:
-```bash
-# Construir la imagen optimizada
-docker build -t compiladores-lp .
-
-# Ejecutar el analizador sobre el archivo por defecto
-docker run --rm -v $(pwd)/output:/app/output compiladores-lp
-
-# Ejecutar sobre un archivo específico
-docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output compiladores-lp input/mi_codigo.lp
-
-# Ejecutar la suite de pruebas unitarias
-docker run --rm --entrypoint /app/test_lexer compiladores-lp
-```
-
-### Uso con Docker Compose:
-```bash
-# Levantar y procesar input/ejemplo.lp
-docker compose up compilador
-
-# Ejecutar pruebas unitarias
-docker compose run --rm test
-```
-
----
-
-## 5. Publicar Release en GitHub:
-```powershell
-.\release.ps1 1.0.0
-```
+- `for` se reconoce como palabra reservada en el analizador léxico, pero no tiene producción sintáctica implementada.
+- El proyecto analiza sintaxis y ejecuta programas básicos; no implementa una comprobación semántica completa de tipos o usos de identificadores.
+- En la ejecución actual, `scanf` no solicita datos por teclado: asigna un valor inicial de cero. Para revisar la sintaxis de programas con lectura, usar `--no-run`.
+- La conversión de PDF requiere Microsoft Word instalado en Windows. Para la entrega y las pruebas se recomienda usar archivos `.lp`.
+- El intérprete limita el número de pasos para evitar ciclos indefinidos.

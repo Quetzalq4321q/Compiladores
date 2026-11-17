@@ -1,3 +1,4 @@
+// Lee fuentes LP y extrae texto de documentos admitidos por el sistema.
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>

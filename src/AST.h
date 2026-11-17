@@ -1,3 +1,4 @@
+// Define la jerarquia de nodos que representa un programa LP analizado.
 #pragma once
 
 #include <string>

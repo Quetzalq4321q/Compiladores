@@ -1,3 +1,4 @@
+// Aplica la gramatica LP por descenso recursivo y construye el AST.
 #include "Parser.h"
 #include <iostream>
 
@@ -62,32 +63,13 @@ void Parser::reportarError(const string& mensaje, const string& esperado) {
     errores.push_back(err);
 }
 
-/* Recuperacion de errores: salta tokens hasta encontrar un punto seguro de sincronizacion */
+/* Recuperacion de errores: conserva el inicio de la siguiente sentencia valida. */
 void Parser::sincronizar() {
-    if (pos < tokens.size()) pos++;
-
     while (!esFin()) {
-        if (anterior().tipo == LexTokenType::SEMICOLON) return;
-        if (anterior().tipo == LexTokenType::RBRACE) return;
-
-        switch (actual().tipo) {
-            case LexTokenType::KW_IF:
-            case LexTokenType::KW_WHILE:
-            case LexTokenType::KW_RETURN:
-            case LexTokenType::KW_SCANF:
-            case LexTokenType::KW_PRINTLN:
-            case LexTokenType::KW_INT:
-            case LexTokenType::KW_FLOAT:
-            case LexTokenType::KW_CHAR:
-            case LexTokenType::KW_BOOLEAN:
-            case LexTokenType::KW_VOID:
-            case LexTokenType::KW_MAIN:
-            case LexTokenType::KW_FUNC:
-            case LexTokenType::RBRACE:
-                return;
-            default:
-                pos++;
-        }
+        if (verificar(LexTokenType::SEMICOLON)) { pos++; return; }
+        if (verificar(LexTokenType::RBRACE) || esInicioComando(actual().tipo) ||
+            esTipoBase(actual().tipo)) return;
+        pos++;
     }
 }
 
@@ -138,7 +120,7 @@ string Parser::getReporteErrores() const {
 
     ss << "[ESTADO]: PROGRAMA RECHAZADO. Total de errores sintacticos: " << errores.size() << "\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
-    ss << "LINEA      TOKEN ENCONTRADO              DESCRIPCION DEL ERROR SINTACTICO\r\n";
+    ss << "LINEA      TOKEN ENCONTRADO              ESPERADO              DESCRIPCION\r\n";
     ss << "-------------------------------------------------------------------------------------------\r\n";
 
     for (const auto& e : errores) {
@@ -147,7 +129,10 @@ string Parser::getReporteErrores() const {
         string tok = "'" + e.tokenEncontrado + "'";
         if (tok.size() < 30) tok.resize(30, ' ');
         else tok += " ";
-        ss << lin << tok << e.mensaje << "\r\n";
+        string esperado = e.construccionEsperada.empty() ? "-" : e.construccionEsperada;
+        if (esperado.size() < 22) esperado.resize(22, ' ');
+        else esperado += " ";
+        ss << lin << tok << esperado << e.mensaje << "\r\n";
     }
     ss << "-------------------------------------------------------------------------------------------\r\n";
     return ss.str();
@@ -483,25 +468,8 @@ shared_ptr<PrintlnNode> Parser::parseEscritura() {
     return node;
 }
 
-/* TERMINO_ESCRITURA -> id DIMENSION2 | CONSTANTE | texto */
+/* Cada termino de println admite una expresion completa. */
 shared_ptr<ExprNode> Parser::parseTerminoEscritura() {
-    int lin = actual().linea;
-
-    if (verificar(LexTokenType::TEXTO)) {
-        Token tok = consumir(LexTokenType::TEXTO, "cadena de texto");
-        return make_shared<LiteralNode>(tok.lexema, "texto", lin);
-    }
-    if (verificar(LexTokenType::NUM_INT) || verificar(LexTokenType::NUM_DEC)) {
-        return parseConstante();
-    }
-    if (verificar(LexTokenType::ID)) {
-        Token idTok = consumir(LexTokenType::ID, "identificador");
-        auto idNode = make_shared<IdentifierNode>(idTok.lexema, lin);
-        idNode->indices = parseDimension2();
-        return idNode;
-    }
-
-    /* O expresion general */
     return parseExpresion();
 }
 
@@ -574,11 +542,8 @@ shared_ptr<AssignNode> Parser::parseAsignacion() {
     return node;
 }
 
-/* COMPLEMENTO -> EXPRESION | FUNCION */
+/* Una llamada es un factor y puede combinarse con los demas operadores. */
 shared_ptr<ExprNode> Parser::parseComplemento() {
-    if (verificar(LexTokenType::KW_FUNC)) {
-        return parseFuncion();
-    }
     return parseExpresion();
 }
 
@@ -760,14 +725,13 @@ shared_ptr<ExprNode> Parser::parseFactor() {
         return parseFuncion();
     }
 
-    /* SIGNO TERMINO */
+    /* Los signos unarios preceden cualquier factor, incluido parentesis o llamada. */
     string signo = parseSigno();
-    auto term = parseTermino();
-
-    if (!signo.empty() && term) {
-        return make_shared<UnaryOpNode>(signo, term, lin);
+    if (!signo.empty()) {
+        auto operando = parseFactor();
+        return make_shared<UnaryOpNode>(signo, operando, lin);
     }
-    return term;
+    return parseTermino();
 }
 
 /* TERMINO -> id DIMENSION2 | CONSTANTE */

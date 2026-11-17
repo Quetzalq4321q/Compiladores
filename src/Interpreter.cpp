@@ -1,3 +1,4 @@
+// Evalua el AST y registra la salida y los errores de ejecucion.
 #include "Interpreter.h"
 #include <iostream>
 #include <cmath>

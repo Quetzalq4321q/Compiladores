@@ -1,3 +1,4 @@
+// Declara los diagnosticos de entrada y las funciones de reporte.
 #pragma once
 
 #include <string>

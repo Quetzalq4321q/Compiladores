@@ -1,3 +1,4 @@
+// Define la tabla de simbolos usada durante el analisis lexico.
 #pragma once
 
 #include <string>
