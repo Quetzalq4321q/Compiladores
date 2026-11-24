@@ -15,6 +15,8 @@ struct ViewState {
     int scrollX = 0;
     int scrollY = 0;
     double zoom = 1.0;
+    bool fitMode = true;
+    int hovered = -1;
 };
 
 ViewState* state(HWND view) {
@@ -52,6 +54,10 @@ int scaled(double zoom, int value) {
     return static_cast<int>(lround(zoom * value));
 }
 
+int centeredOffset(int page, int content) {
+    return max(0, (page - content) / 2);
+}
+
 void updateScroll(HWND view, ViewState& s) {
     RECT client;
     GetClientRect(view, &client);
@@ -73,6 +79,25 @@ void updateScroll(HWND view, ViewState& s) {
     info.nPage = pageH;
     info.nPos = s.scrollY;
     SetScrollInfo(view, SB_VERT, &info, TRUE);
+}
+
+void fitGraph(HWND view, ViewState& s) {
+    RECT client;
+    GetClientRect(view, &client);
+    int pageW = max(1L, client.right - client.left);
+    int pageH = max(1L, client.bottom - client.top);
+    if (s.graph.vertices().empty()) {
+        s.zoom = 1.0;
+    } else {
+        double horizontal = static_cast<double>(max(1, pageW - 32)) / max(1, s.graph.width());
+        double vertical = static_cast<double>(max(1, pageH - 32)) / max(1, s.graph.height());
+        s.zoom = clamp(min(horizontal, vertical), 0.02, 3.0);
+    }
+    s.fitMode = true;
+    s.scrollX = 0;
+    s.scrollY = 0;
+    updateScroll(view, s);
+    InvalidateRect(view, nullptr, FALSE);
 }
 
 void scroll(HWND view, ViewState& s, int bar, WORD action) {
@@ -105,19 +130,23 @@ void paintGraph(HDC dc, const RECT& client, const ViewState& s) {
     }
 
     const auto& vertices = s.graph.vertices();
+    int originX = centeredOffset(client.right - client.left, scaled(s.zoom, s.graph.width()));
+    int originY = centeredOffset(client.bottom - client.top, scaled(s.zoom, s.graph.height()));
+    auto drawX = [&](int value) { return scaled(s.zoom, value) + originX - s.scrollX; };
+    auto drawY = [&](int value) { return scaled(s.zoom, value) + originY - s.scrollY; };
     HPEN edge = CreatePen(PS_SOLID, max(1, scaled(s.zoom, 2)), RGB(104, 117, 138));
     HGDIOBJ oldPen = SelectObject(dc, edge);
     for (const auto& node : vertices) {
-        int x1 = scaled(s.zoom, node.x + ASTGraph::nodeWidth / 2) - s.scrollX;
-        int y1 = scaled(s.zoom, node.y + ASTGraph::nodeHeight / 2) - s.scrollY;
+        int x1 = drawX(node.x);
+        int y1 = drawY(node.y + ASTGraph::nodeHeight);
         for (size_t child : node.children) {
             const auto& target = vertices[child];
-            int x2 = scaled(s.zoom, target.x - ASTGraph::nodeWidth / 2) - s.scrollX;
-            int y2 = scaled(s.zoom, target.y + ASTGraph::nodeHeight / 2) - s.scrollY;
-            int middle = (x1 + x2) / 2;
+            int x2 = drawX(target.x);
+            int y2 = drawY(target.y);
+            int middle = (y1 + y2) / 2;
             MoveToEx(dc, x1, y1, nullptr);
-            LineTo(dc, middle, y1);
-            LineTo(dc, middle, y2);
+            LineTo(dc, x1, middle);
+            LineTo(dc, x2, middle);
             LineTo(dc, x2, y2);
         }
     }
@@ -134,16 +163,18 @@ void paintGraph(HDC dc, const RECT& client, const ViewState& s) {
         CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
     SetBkMode(dc, TRANSPARENT);
     for (const auto& node : vertices) {
-        int left = scaled(s.zoom, node.x - ASTGraph::nodeWidth / 2) - s.scrollX;
-        int top = scaled(s.zoom, node.y) - s.scrollY;
+        int left = drawX(node.x - ASTGraph::nodeWidth / 2);
+        int top = drawY(node.y);
         int width = scaled(s.zoom, ASTGraph::nodeWidth);
         int height = scaled(s.zoom, ASTGraph::nodeHeight);
         if (left + width < client.left || left > client.right || top + height < client.top || top > client.bottom) continue;
         HBRUSH brush = CreateSolidBrush(fill(node.kind));
         HGDIOBJ oldBrush = SelectObject(dc, brush);
-        RoundRect(dc, left, top, left + width, top + height, 12, 12);
+        RoundRect(dc, left, top, left + width, top + height,
+                  max(3, scaled(s.zoom, 12)), max(3, scaled(s.zoom, 12)));
         SelectObject(dc, oldBrush);
         DeleteObject(brush);
+        if (s.zoom < 0.48) continue;
         RECT label = {left + 5, top + 4, left + width - 5, top + scaled(s.zoom, 34)};
         HGDIOBJ oldFont = SelectObject(dc, labelFont);
         SetTextColor(dc, RGB(20, 35, 52));
@@ -162,6 +193,37 @@ void paintGraph(HDC dc, const RECT& client, const ViewState& s) {
     DeleteObject(border);
     DeleteObject(labelFont);
     DeleteObject(lineFont);
+
+    RECT info = {8, 8, min(client.right - 8, 690L), 36};
+    HBRUSH infoBrush = CreateSolidBrush(RGB(248, 250, 253));
+    FillRect(dc, &info, infoBrush);
+    DeleteObject(infoBrush);
+    SetTextColor(dc, RGB(54, 68, 85));
+    wstring hint = L"Vista completa. Ctrl + rueda: zoom; doble clic: ajustar.";
+    if (s.hovered >= 0 && static_cast<size_t>(s.hovered) < vertices.size()) {
+        const auto& node = vertices[static_cast<size_t>(s.hovered)];
+        hint = unicode(node.label) + L" (linea " + to_wstring(node.line) + L")";
+    }
+    DrawTextW(dc, hint.c_str(), static_cast<int>(hint.size()), &info,
+              DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+}
+
+int hitTest(HWND view, const ViewState& s, int x, int y) {
+    RECT client;
+    GetClientRect(view, &client);
+    int originX = centeredOffset(client.right - client.left, scaled(s.zoom, s.graph.width()));
+    int originY = centeredOffset(client.bottom - client.top, scaled(s.zoom, s.graph.height()));
+    const auto& vertices = s.graph.vertices();
+    for (size_t i = vertices.size(); i > 0; --i) {
+        const auto& node = vertices[i - 1];
+        int left = scaled(s.zoom, node.x - ASTGraph::nodeWidth / 2) + originX - s.scrollX;
+        int top = scaled(s.zoom, node.y) + originY - s.scrollY;
+        if (x >= left && x <= left + scaled(s.zoom, ASTGraph::nodeWidth) &&
+            y >= top && y <= top + scaled(s.zoom, ASTGraph::nodeHeight)) {
+            return static_cast<int>(i - 1);
+        }
+    }
+    return -1;
 }
 
 LRESULT CALLBACK viewProc(HWND view, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -175,8 +237,35 @@ LRESULT CALLBACK viewProc(HWND view, UINT message, WPARAM wParam, LPARAM lParam)
             SetWindowLongPtrW(view, GWLP_USERDATA, 0);
             return 0;
         case WM_SIZE:
-            if (s) updateScroll(view, *s);
+            if (s) {
+                if (s->fitMode) fitGraph(view, *s);
+                else updateScroll(view, *s);
+            }
             InvalidateRect(view, nullptr, FALSE);
+            return 0;
+        case WM_SHOWWINDOW:
+            if (s && wParam && s->fitMode) fitGraph(view, *s);
+            break;
+        case WM_LBUTTONDBLCLK:
+            if (s) fitGraph(view, *s);
+            return 0;
+        case WM_MOUSEMOVE:
+            if (s) {
+                TRACKMOUSEEVENT tracking = {sizeof(tracking), TME_LEAVE, view, 0};
+                TrackMouseEvent(&tracking);
+                int hovered = hitTest(view, *s, static_cast<short>(LOWORD(lParam)),
+                                      static_cast<short>(HIWORD(lParam)));
+                if (hovered != s->hovered) {
+                    s->hovered = hovered;
+                    InvalidateRect(view, nullptr, FALSE);
+                }
+            }
+            return 0;
+        case WM_MOUSELEAVE:
+            if (s && s->hovered != -1) {
+                s->hovered = -1;
+                InvalidateRect(view, nullptr, FALSE);
+            }
             return 0;
         case WM_HSCROLL:
             if (s) scroll(view, *s, SB_HORZ, LOWORD(wParam));
@@ -187,7 +276,21 @@ LRESULT CALLBACK viewProc(HWND view, UINT message, WPARAM wParam, LPARAM lParam)
         case WM_MOUSEWHEEL:
             if (s) {
                 if (GET_KEYSTATE_WPARAM(wParam) & MK_CONTROL) {
-                    s->zoom = clamp(s->zoom + (GET_WHEEL_DELTA_WPARAM(wParam) > 0 ? 0.1 : -0.1), 0.5, 2.0);
+                    RECT client;
+                    GetClientRect(view, &client);
+                    POINT cursor = {static_cast<short>(LOWORD(lParam)), static_cast<short>(HIWORD(lParam))};
+                    ScreenToClient(view, &cursor);
+                    int originX = centeredOffset(client.right - client.left, scaled(s->zoom, s->graph.width()));
+                    int originY = centeredOffset(client.bottom - client.top, scaled(s->zoom, s->graph.height()));
+                    double worldX = static_cast<double>(cursor.x + s->scrollX - originX) / s->zoom;
+                    double worldY = static_cast<double>(cursor.y + s->scrollY - originY) / s->zoom;
+                    double factor = pow(1.25, static_cast<double>(GET_WHEEL_DELTA_WPARAM(wParam)) / WHEEL_DELTA);
+                    s->zoom = clamp(s->zoom * factor, 0.02, 3.0);
+                    s->fitMode = false;
+                    originX = centeredOffset(client.right - client.left, scaled(s->zoom, s->graph.width()));
+                    originY = centeredOffset(client.bottom - client.top, scaled(s->zoom, s->graph.height()));
+                    s->scrollX = static_cast<int>(lround(worldX * s->zoom + originX - cursor.x));
+                    s->scrollY = static_cast<int>(lround(worldY * s->zoom + originY - cursor.y));
                     updateScroll(view, *s);
                     InvalidateRect(view, nullptr, FALSE);
                 } else {
@@ -215,6 +318,13 @@ LRESULT CALLBACK viewProc(HWND view, UINT message, WPARAM wParam, LPARAM lParam)
             EndPaint(view, &ps);
             return 0;
         }
+        case WM_MOUSEHWHEEL:
+            if (s) {
+                s->scrollX += GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA * 60;
+                updateScroll(view, *s);
+                InvalidateRect(view, nullptr, FALSE);
+            }
+            return 0;
     }
     return DefWindowProcW(view, message, wParam, lParam);
 }
@@ -224,6 +334,7 @@ HWND ASTGraphView::create(HWND parent, int controlId) {
     HINSTANCE instance = reinterpret_cast<HINSTANCE>(GetModuleHandleW(nullptr));
     WNDCLASSEXW cls = {};
     cls.cbSize = sizeof(cls);
+    cls.style = CS_DBLCLKS;
     cls.lpfnWndProc = viewProc;
     cls.hInstance = instance;
     cls.lpszClassName = className;
@@ -240,9 +351,11 @@ void ASTGraphView::setGraph(HWND view, const ASTGraph& graph) {
     ViewState* s = state(view);
     if (!s) return;
     s->graph = graph;
-    s->scrollX = 0;
-    s->scrollY = 0;
-    s->zoom = 1.0;
-    updateScroll(view, *s);
-    InvalidateRect(view, nullptr, FALSE);
+    s->hovered = -1;
+    fitGraph(view, *s);
+}
+
+void ASTGraphView::fit(HWND view) {
+    if (!view) return;
+    if (ViewState* s = state(view)) fitGraph(view, *s);
 }

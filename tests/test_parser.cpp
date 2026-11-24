@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cassert>
 #include <string>
+#include <algorithm>
+#include <map>
 #include "../src/Lexer.h"
 #include "../src/Parser.h"
 #include "../src/AST.h"
@@ -389,10 +391,21 @@ void testGrafoVisualDelAST() {
     const auto& nodes = graph.vertices();
     assert(nodes.size() > 25 && graph.width() > 0 && graph.height() > 0);
     assert(nodes[0].label == "Programa LP" && nodes[0].children.size() == 2);
+    assert(nodes[0].x == (nodes[nodes[0].children.front()].x +
+                          nodes[nodes[0].children.back()].x) / 2);
+    assert(nodes[nodes[0].children[0]].y == nodes[nodes[0].children[1]].y);
+    map<int, vector<int>> levels;
     for (const auto& node : nodes) {
         assert(node.x > 0 && node.y > 0);
+        levels[node.y].push_back(node.x);
         for (size_t child : node.children) {
             assert(child < nodes.size() && nodes[child].y > node.y);
+        }
+    }
+    for (auto& [level, positions] : levels) {
+        sort(positions.begin(), positions.end());
+        for (size_t i = 1; i < positions.size(); ++i) {
+            assert(positions[i] - positions[i - 1] >= ASTGraph::nodeWidth);
         }
     }
     const auto svg = graph.toSVG();

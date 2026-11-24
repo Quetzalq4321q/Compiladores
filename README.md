@@ -48,17 +48,17 @@ test_parser
 
 En Windows, anteponer `build\` o la ruta real de compilación a cada ejecutable. `--no-run` analiza y genera reportes sin ejecutar el programa. Si no se indica un archivo, la consola busca `input/ejemplo.lp`. Los reportes se guardan en `output/` del directorio desde el que se inicia el ejecutable: `tokens.txt`, `tabla_simbolos.txt`, `ast.txt`, `ast.svg`, `errores.txt` y, al ejecutar, `ejecucion.txt`. La consola devuelve código 0 si todo fue correcto, 1 ante errores de entrada, 2 ante errores del programa y 3 si no pudo guardar reportes.
 
-En la interfaz de Windows, el botón **Analizar** abre la pestaña **AST Gráfico**. Los nodos y sus conexiones se dibujan de izquierda a derecha. La rueda desplaza verticalmente, `Ctrl` más rueda cambia la escala y las barras permiten recorrer el resto del árbol. La interfaz también guarda `output/ast.svg`, que puede abrirse en un navegador o visor SVG; `output/ast.txt` conserva una versión textual para inspección rápida. El grafo se genera sin instalar Graphviz ni otra dependencia externa.
+En la interfaz de Windows, el botón **Analizar** abre la pestaña **AST Gráfico**. La raíz aparece arriba y cada nivel de hijos se distribuye debajo de su padre. La vista comienza ajustada para mostrar el árbol completo. `Ctrl` más rueda amplía alrededor del puntero; las barras recorren el árbol cuando está ampliado. **Ajustar AST** o un doble clic recupera la vista completa. Al señalar un nodo aparece su nombre y línea en la parte superior. La interfaz también guarda `output/ast.svg`, que puede abrirse en un navegador o visor SVG; `output/ast.txt` conserva una versión textual para inspección rápida. El grafo se genera sin instalar Graphviz ni otra dependencia externa.
 
 Para probar el ZIP portátil en Windows x64, extraerlo completo en una carpeta con permisos de escritura y abrir `abrir_gui.bat` o `ejecutar_cli.bat`. El paquete se genera después de compilar en modo Release:
 
 ```powershell
 cmake -S . -B cmake-build-release-portable -DCMAKE_BUILD_TYPE=Release
 cmake --build cmake-build-release-portable
-.\package_portable.ps1 -PackageName Compiladores-portable-windows-x64-ast-grafico
+.\package_portable.ps1 -PackageName Compiladores-portable-windows-x64-arbol-completo
 ```
 
-El resultado es `dist/Compiladores-portable-windows-x64-ast-grafico.zip`.
+El resultado es `dist/Compiladores-portable-windows-x64-arbol-completo.zip`.
 
 ## Sintaxis implementada
 

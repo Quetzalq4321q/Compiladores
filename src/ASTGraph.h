@@ -19,7 +19,7 @@ struct GraphVertex {
 
 class ASTGraph {
 public:
-    static constexpr int nodeWidth = 190;
+    static constexpr int nodeWidth = 170;
     static constexpr int nodeHeight = 54;
 
     static ASTGraph fromProgram(const std::shared_ptr<ProgramNode>& program);
@@ -36,5 +36,5 @@ private:
 
     std::size_t add(const std::string& label, GraphKind kind, int line, std::size_t parent);
     void append(const std::shared_ptr<ASTNode>& node, std::size_t parent);
-    int position(std::size_t index, int depth, int& leaves, int& maxDepth);
+    int position(std::size_t index, int depth, int& leafIndex, int& maxDepth);
 };

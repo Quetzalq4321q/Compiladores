@@ -32,6 +32,7 @@ using namespace std;
 #define IDC_BTN_EJ_VALIDO   106
 #define IDC_BTN_EJ_ERROR    107
 #define IDC_BTN_LIMPIAR     108
+#define IDC_BTN_AJUSTAR_AST 115
 #define IDC_EDIT_ENTRADA    109
 #define IDC_EDIT_TOKENS     110
 #define IDC_EDIT_TABLA      111
@@ -53,6 +54,7 @@ HWND hBtnEjecutar;
 HWND hBtnEjValido;
 HWND hBtnEjError;
 HWND hBtnLimpiar;
+HWND hBtnAjustarAST;
 HWND hLabelFile;
 HWND hLabelStatus;
 HBRUSH hBrushConsole;
@@ -329,7 +331,8 @@ static void redimensionarPaneles(HWND hWnd) {
     SetWindowPos(hBtnEjValido,  NULL, m + 345,       btnY, 110, btnH, SWP_NOZORDER);
     SetWindowPos(hBtnEjError,   NULL, m + 460,       btnY, 110, btnH, SWP_NOZORDER);
     SetWindowPos(hBtnLimpiar,   NULL, m + 575,       btnY, 80,  btnH, SWP_NOZORDER);
-    SetWindowPos(hLabelFile,    NULL, m + 665,       btnY + 5, ancho - (m + 675), 20, SWP_NOZORDER);
+    SetWindowPos(hBtnAjustarAST, NULL, m + 660,      btnY, 110, btnH, SWP_NOZORDER);
+    SetWindowPos(hLabelFile,    NULL, m + 775,       btnY + 5, ancho - (m + 785), 20, SWP_NOZORDER);
 
     /* Fila 2: Banner de estado */
     int statusY = 44;
@@ -396,6 +399,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
             0,0,0,0, hWnd, (HMENU)IDC_BTN_LIMPIAR, NULL, NULL);
         SendMessage(hBtnLimpiar, WM_SETFONT, (WPARAM)hFont, TRUE);
+
+        hBtnAjustarAST = CreateWindowA("BUTTON", "Ajustar AST",
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            0,0,0,0, hWnd, (HMENU)IDC_BTN_AJUSTAR_AST, NULL, NULL);
+        SendMessage(hBtnAjustarAST, WM_SETFONT, (WPARAM)hFont, TRUE);
 
         hLabelFile = CreateWindowA("STATIC", "ejemplo.lp (codigo cargado)",
             WS_CHILD | WS_VISIBLE | SS_LEFT | SS_NOPREFIX,
@@ -577,6 +585,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
         case IDC_BTN_EJECUTAR:
             ejecutarProgramaLP(hWnd);
+            break;
+
+        case IDC_BTN_AJUSTAR_AST:
+            TabCtrl_SetCurSel(hTab, 4);
+            mostrarPestana(4);
+            ASTGraphView::fit(hAstGraph);
             break;
 
         case IDC_BTN_EJ_VALIDO:

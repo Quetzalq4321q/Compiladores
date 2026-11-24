@@ -8,9 +8,9 @@ using namespace std;
 
 namespace {
 constexpr size_t noParent = static_cast<size_t>(-1);
-constexpr int horizontalStep = 230;
-constexpr int verticalStep = 82;
-constexpr int margin = 42;
+constexpr int leafStep = 196;
+constexpr int levelStep = 105;
+constexpr int margin = 36;
 
 string xml(const string& value) {
     string result;
@@ -134,13 +134,17 @@ void ASTGraph::append(const shared_ptr<ASTNode>& node, size_t parent) {
     }
 }
 
-int ASTGraph::position(size_t index, int depth, int& leaves, int& maxDepth) {
+int ASTGraph::position(size_t index, int depth, int& leafIndex, int& maxDepth) {
     maxDepth = max(maxDepth, depth);
-    auto children = nodes[index].children;
-    nodes[index].x = margin + nodeWidth / 2 + depth * horizontalStep;
-    nodes[index].y = margin + leaves * verticalStep;
-    ++leaves;
-    for (size_t child : children) position(child, depth + 1, leaves, maxDepth);
+    const auto& children = nodes[index].children;
+    nodes[index].y = margin + depth * levelStep;
+    if (children.empty()) {
+        nodes[index].x = margin + nodeWidth / 2 + leafIndex * leafStep;
+        ++leafIndex;
+    } else {
+        for (size_t child : children) position(child, depth + 1, leafIndex, maxDepth);
+        nodes[index].x = (nodes[children.front()].x + nodes[children.back()].x) / 2;
+    }
     return nodes[index].x;
 }
 
@@ -151,8 +155,8 @@ ASTGraph ASTGraph::fromProgram(const shared_ptr<ProgramNode>& program) {
     if (graph.nodes.empty()) return graph;
     int leaves = 0, depth = 0;
     graph.position(0, 0, leaves, depth);
-    graph.canvasWidth = margin * 2 + nodeWidth + depth * horizontalStep;
-    graph.canvasHeight = margin * 2 + nodeHeight + max(0, leaves - 1) * verticalStep;
+    graph.canvasWidth = margin * 2 + nodeWidth + max(0, leaves - 1) * leafStep;
+    graph.canvasHeight = margin * 2 + nodeHeight + depth * levelStep;
     return graph;
 }
 
@@ -166,13 +170,13 @@ string ASTGraph::toSVG() const {
     out << "<rect width=\"100%\" height=\"100%\" fill=\"#ffffff\"/>\n";
     for (const auto& node : nodes) {
         for (size_t child : node.children) {
-            int x1 = node.x + nodeWidth / 2;
-            int y1 = node.y + nodeHeight / 2;
-            int x2 = nodes[child].x - nodeWidth / 2;
-            int y2 = nodes[child].y + nodeHeight / 2;
-            int middle = (x1 + x2) / 2;
-            out << "<path d=\"M " << x1 << ' ' << y1 << " H " << middle << " V " << y2
-                << " H " << x2 << "\" fill=\"none\" stroke=\"#68758a\" stroke-width=\"2\"/>\n";
+            int x1 = node.x;
+            int y1 = node.y + nodeHeight;
+            int x2 = nodes[child].x;
+            int y2 = nodes[child].y;
+            int middle = (y1 + y2) / 2;
+            out << "<path d=\"M " << x1 << ' ' << y1 << " V " << middle << " H " << x2
+                << " V " << y2 << "\" fill=\"none\" stroke=\"#68758a\" stroke-width=\"2\"/>\n";
         }
     }
     for (const auto& node : nodes) {

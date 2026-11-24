@@ -8,4 +8,5 @@
 namespace ASTGraphView {
 HWND create(HWND parent, int controlId);
 void setGraph(HWND view, const ASTGraph& graph);
+void fit(HWND view);
 }

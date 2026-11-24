@@ -10,7 +10,7 @@ La aplicación tiene seis pestañas: código fuente, consola de ejecución, secu
 
 1. Escriba el programa LP en **Entrada (Código Fuente)** o use **Abrir Archivo**. Se admiten archivos `.lp`, `.txt`, `.docx` y `.pdf`; la conversión de PDF requiere Microsoft Word en Windows.
 2. Pulse **Analizar**. Si el programa es válido, se abrirá **AST Gráfico**. Si hay errores, se abrirá **Diagnóstico y Errores**.
-3. En **AST Gráfico**, las tarjetas representan funciones, bloques, sentencias, expresiones y valores. Las líneas muestran la relación entre nodos. Use la rueda para desplazarse verticalmente, `Ctrl` más rueda para ampliar o reducir y las barras de desplazamiento para recorrer el árbol.
+3. En **AST Gráfico**, la raíz aparece arriba y sus hijos forman niveles debajo. Las tarjetas representan funciones, bloques, sentencias, expresiones y valores. La vista inicial muestra el árbol completo. Use `Ctrl` más rueda para ampliar alrededor del puntero; las barras permiten recorrer el árbol ampliado. Señale un nodo para leer su nombre y línea. Pulse **Ajustar AST** o haga doble clic en el grafo para volver a la vista completa.
 4. Pulse **Ejecutar LP** para interpretar un programa aceptado y consultar su salida en **Consola de Ejecución**.
 
 Los botones **Ejemplo OK** y **Ejemplo Error** cargan programas de demostración. **Limpiar** vacía el editor y los paneles. La representación gráfica no requiere instalar Graphviz.

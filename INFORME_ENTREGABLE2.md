@@ -6,7 +6,7 @@ El proyecto recibe un archivo LP, valida la entrada, obtiene tokens, analiza las
 
 ## Arquitectura y decisiones
 
-`FileConverter` obtiene el código fuente; `Lexer` genera tokens con línea; `Parser` usa descenso recursivo y devuelve nodos definidos en `AST`; `ASTGraph` convierte esos nodos en vértices y conexiones, calcula una posición para cada uno y escribe SVG; `ASTGraphView` dibuja el mismo grafo con GDI en Windows. `ErrorHandler` reúne diagnósticos; `Interpreter` ejecuta el árbol. `cli_main` integra los módulos y escribe los reportes en `output/`. `main` presenta las mismas etapas en la interfaz WinAPI.
+`FileConverter` obtiene el código fuente; `Lexer` genera tokens con línea; `Parser` usa descenso recursivo y devuelve nodos definidos en `AST`; `ASTGraph` convierte esos nodos en vértices y conexiones, coloca los hijos por niveles bajo sus padres y escribe SVG; `ASTGraphView` dibuja el mismo grafo con GDI en Windows, ajusta el árbol completo a la ventana y permite ampliar alrededor del puntero. `ErrorHandler` reúne diagnósticos; `Interpreter` ejecuta el árbol. `cli_main` integra los módulos y escribe los reportes en `output/`. `main` presenta las mismas etapas en la interfaz WinAPI.
 
 La jerarquía de funciones de expresión en `Parser` representa la precedencia de operadores. Los operadores binarios repetibles se construyen de izquierda a derecha. Los signos unarios y la negación se procesan recursivamente, también ante paréntesis o llamadas. Las listas de `println` usan expresiones completas y los índices de `scanf` quedan incluidos en el árbol impreso.
 
